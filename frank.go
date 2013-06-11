@@ -2,16 +2,16 @@ package main
 
 import (
 	"flag"
-	"strings"
 	"github.com/breunigs/frank/frank"
 	irc "github.com/fluffle/goirc/client"
 	"log"
+	"strings"
 )
 
 //~ const instaJoin = "#chaos-hd"
 const instaJoin = "#test"
 
-const nickServPass = ""
+const nickServPass = "k6CA9b9cfrLAPKmjlJGTIDO2bRyTN6"
 
 const ircServer = "irc.twice-irc.de"
 
@@ -25,8 +25,8 @@ func main() {
 	c.AddHandler(irc.CONNECTED,
 		func(conn *irc.Conn, line *irc.Line) {
 			log.Printf("Connected as: %s\n", conn.Me.Nick)
-			conn.Privmsg("nickserv", "identify " + nickServPass)
-			for _, cn := range(strings.Split(instaJoin, " ")) {
+			conn.Privmsg("nickserv", "identify "+nickServPass)
+			for _, cn := range strings.Split(instaJoin, " ") {
 				if cn != "" {
 					conn.Join(cn)
 				}
@@ -80,7 +80,7 @@ func main() {
 			cn := line.Args[0]
 			conn.Mode(cn, "+v", conn.Me.Nick)
 			conn.Mode(cn, "-o", conn.Me.Nick)
-			conn.Privmsg(cn, line.Nick + ": SKYNET® Protection activated")
+			conn.Privmsg(cn, line.Nick+": SKYNET® Protection activated")
 		})
 
 	// disconnect
