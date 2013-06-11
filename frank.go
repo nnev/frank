@@ -11,7 +11,7 @@ import (
 //~ const instaJoin = "#chaos-hd"
 const instaJoin = "#test"
 
-const nickServPass = "k6CA9b9cfrLAPKmjlJGTIDO2bRyTN6"
+const nickServPass = ""
 
 const ircServer = "irc.twice-irc.de"
 
@@ -41,6 +41,17 @@ func main() {
 
 			go func() { frank.RaumBang(conn, line) }()
 			go func() { frank.UriFind(conn, line) }()
+
+			if line.Args[0] == conn.Me.nick && line.Args[1] == "help" {
+				conn.Privmsg(line.Nick, "It’s a game to find out what " + conn.Me.Nick + "can do.");
+				conn.Privmsg(line.Nick, "1. Most likely I can find out the <title> of an URL, if:");
+				conn.Privmsg(line.Nick, "  – I am in the channel where it is posted");
+				conn.Privmsg(line.Nick, "  – you sent it in a query to me");
+				conn.Privmsg(line.Nick, "  I’m going to cache that URL for a certain amount of time.");
+				conn.Privmsg(line.Nick, "2. I’ll answer to !raum in certain channels.");
+				conn.Privmsg(line.Nick, "If you need more details, please look at my source:");
+				conn.Privmsg(line.Nick, "https://github.com/breunigs/frank");
+			}
 
 			//~ log.Printf("      Debug: tgt: %s, msg: %s\n", tgt, msg)
 		})
