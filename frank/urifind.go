@@ -66,7 +66,8 @@ func extract(msg string) []string {
 	find := exec.Command("./urifind", "-u")
 	pipe, err := find.StdinPipe()
 	if err != nil {
-		log.Printf("WTF: couldn’t open stdin pipe to urifidn: %s", err)
+		log.Printf("WTF: couldn’t open stdin pipe to urifind: %s", err)
+		return nil
 	}
 	pipe.Write([]byte(msg))
 	pipe.Close()
@@ -182,6 +183,6 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 	if prefix == "" {
 		prefix = "Link Info"
 	}
-  // use notice instead of PrivMsg to avoid bots answering each other
+	// use notice instead of PrivMsg to avoid bots answering each other
 	conn.Notice(tgt, "["+prefix+"] "+title)
 }
