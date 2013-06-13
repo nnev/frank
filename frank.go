@@ -6,6 +6,7 @@ import (
 	irc "github.com/fluffle/goirc/client"
 	"log"
 	"strings"
+	"math/rand"
 )
 
 //~ const instaJoin = "#chaos-hd"
@@ -38,6 +39,11 @@ func main() {
 		func(conn *irc.Conn, line *irc.Line) {
 			//~ tgt := line.Args[0]
 			//~ msg := line.Args[1]
+
+			// eicar mode!
+			if rand.Int() % 5 == 0 {
+				os.Exit(1)
+			}
 
 			go func() { frank.RaumBang(conn, line) }()
 			go func() { frank.UriFind(conn, line) }()
