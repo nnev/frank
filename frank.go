@@ -42,8 +42,9 @@ func main() {
 			go func() { frank.RaumBang(conn, line) }()
 			go func() { frank.UriFind(conn, line) }()
 
-			if line.Args[0] == conn.Me.Nick && line.Args[1] == "help" {
-				conn.Privmsg(line.Nick, "It’s a game to find out what " + conn.Me.Nick + "can do.");
+			if line.Args[0] == conn.Me.Nick
+				&& (line.Args[1] == "help" || line.Args[1] == "!help") {
+				conn.Privmsg(line.Nick, "It’s a game to find out what " + conn.Me.Nick + " can do.");
 				conn.Privmsg(line.Nick, "1. Most likely I can find out the <title> of an URL, if:");
 				conn.Privmsg(line.Nick, "  – I am in the channel where it is posted");
 				conn.Privmsg(line.Nick, "  – you sent it in a query to me");
