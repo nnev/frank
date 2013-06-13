@@ -15,10 +15,12 @@ const nickServPass = ""
 
 const ircServer = "irc.twice-irc.de"
 
+const botNick = "frank2"
+
 func main() {
 	flag.Parse() // parses the logging flags. TODO
 
-	c := irc.SimpleClient("frank", "frank", "Frank Böterrich der Zweite")
+	c := irc.SimpleClient(botNick, botNick, "Frank Böterrich der Zweite")
 	c.SSL = true
 
 	// connect
