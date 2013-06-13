@@ -46,8 +46,8 @@ func main() {
 				return
 			}
 
-			go func() { frank.RaumBang(conn, line) }()
-			go func() { frank.UriFind(conn, line) }()
+			go frank.RaumBang(conn, line)
+			go frank.UriFind(conn, line)
 
 			if line.Args[0] == conn.Me.Nick &&
 				(line.Args[1] == "help" || line.Args[1] == "!help") {
