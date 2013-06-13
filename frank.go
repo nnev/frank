@@ -8,14 +8,13 @@ import (
 	"strings"
 )
 
-//~ const instaJoin = "#chaos-hd"
-const instaJoin = "#test"
-
-const nickServPass = ""
-
-const ircServer = "irc.twice-irc.de"
-
-const botNick = "frank2"
+const (
+	//~ instaJoin = "#chaos-hd"
+	instaJoin    = "#test"
+	nickServPass = ""
+	ircServer    = "irc.twice-irc.de"
+	botNick      = "frank"
+)
 
 func main() {
 	flag.Parse() // parses the logging flags. TODO
