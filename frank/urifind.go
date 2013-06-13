@@ -33,7 +33,7 @@ const httpGetDeadline = 10
 // new line replace regex
 var newlineReplacer = regexp.MustCompile(`\s+`)
 
-var ignoreDomainsRegex = regexp.MustCompile(`^http://p.nnev.de`)
+var ignoreDomainsRegex = regexp.MustCompile(`^http://p\.nnev\.de`)
 
 func UriFind(conn *irc.Conn, line *irc.Line) {
 	defer func() {
