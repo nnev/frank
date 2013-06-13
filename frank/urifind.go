@@ -3,6 +3,7 @@ package frank
 import (
 	"code.google.com/p/go.net/html"
 	"code.google.com/p/go.net/html/atom"
+	"errors"
 	irc "github.com/fluffle/goirc/client"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -120,8 +122,12 @@ func titleGet(url string) (string, error) {
 	// TODO: r.Body → utf8?
 	title := titleParseHtml(io.LimitReader(r.Body, 1024*httpReadKByte))
 	title = newlineReplacer.ReplaceAllString(title, " ")
-
 	log.Printf("Title for URL %s: %s\n", url, title)
+
+	if r.StatusCode != 200 {
+		return "", errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
+	}
+
 	return title, nil
 }
 
