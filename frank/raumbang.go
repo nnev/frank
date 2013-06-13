@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const hostToPing = "lolpizza.de"
+const hostToPing = "chaostreff.vpn.zekjur.net"
 
 // only answer !raum from this channel
 const bangRaumChannel = "#chaos-hd"
