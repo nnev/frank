@@ -1,4 +1,3 @@
-//Encoding a map to a gob. Save the gob to disk. Read the gob from disk. Decode the gob into another map.
 package frank
 
 import (
