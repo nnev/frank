@@ -39,19 +39,24 @@ func main() {
 			//~ tgt := line.Args[0]
 			//~ msg := line.Args[1]
 
+			// ignore eicar, the bot we love to hate
+			if line.Nick == "eicar" {
+				return
+			}
+
 			go func() { frank.RaumBang(conn, line) }()
 			go func() { frank.UriFind(conn, line) }()
 
-			if line.Args[0] == conn.Me.Nick
-				&& (line.Args[1] == "help" || line.Args[1] == "!help") {
-				conn.Privmsg(line.Nick, "It’s a game to find out what " + conn.Me.Nick + " can do.");
-				conn.Privmsg(line.Nick, "1. Most likely I can find out the <title> of an URL, if:");
-				conn.Privmsg(line.Nick, "  – I am in the channel where it is posted");
-				conn.Privmsg(line.Nick, "  – you sent it in a query to me");
-				conn.Privmsg(line.Nick, "  I’m going to cache that URL for a certain amount of time.");
-				conn.Privmsg(line.Nick, "2. I’ll answer to !raum in certain channels.");
-				conn.Privmsg(line.Nick, "If you need more details, please look at my source:");
-				conn.Privmsg(line.Nick, "https://github.com/breunigs/frank");
+			if line.Args[0] == conn.Me.Nick &&
+				(line.Args[1] == "help" || line.Args[1] == "!help") {
+				conn.Privmsg(line.Nick, "It’s a game to find out what "+conn.Me.Nick+" can do.")
+				conn.Privmsg(line.Nick, "1. Most likely I can find out the <title> of an URL, if:")
+				conn.Privmsg(line.Nick, "  – I am in the channel where it is posted")
+				conn.Privmsg(line.Nick, "  – you sent it in a query to me")
+				conn.Privmsg(line.Nick, "  I’m going to cache that URL for a certain amount of time.")
+				conn.Privmsg(line.Nick, "2. I’ll answer to !raum in certain channels.")
+				conn.Privmsg(line.Nick, "If you need more details, please look at my source:")
+				conn.Privmsg(line.Nick, "https://github.com/breunigs/frank")
 			}
 
 			//~ log.Printf("      Debug: tgt: %s, msg: %s\n", tgt, msg)
