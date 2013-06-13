@@ -28,6 +28,9 @@ const httpReadKByte = 100
 // definitely magic involved. Must be larger than 5.
 const httpGetDeadline = 10
 
+// new line replace regex
+var newlineReplacer = regexp.MustCompile(`\s+`)
+
 var ignoreDomainsRegex = regexp.MustCompile(`^http://p.nnev.de`)
 
 func UriFind(conn *irc.Conn, line *irc.Line) {
@@ -114,6 +117,7 @@ func titleGet(url string) string {
 
 	// TODO: r.Body → utf8?
 	title := titleParseHtml(io.LimitReader(r.Body, 1024*httpReadKByte))
+	title = newlineReplacer.ReplaceAllString(title, " ")
 
 	log.Printf("Title for URL %s: %s\n", url, title)
 	return title
