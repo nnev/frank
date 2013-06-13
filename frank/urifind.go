@@ -62,8 +62,10 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			}
 
 			log.Printf("testing URL: %s", url)
-			title := titleGet(url)
-			if title != "" {
+			title, err := titleGet(url)
+			if err != nil {
+				postTitle(conn, line, err.Error(), "Error")
+			} else if title != "" {
 				postTitle(conn, line, title, "")
 				addCache(url, title)
 			}
@@ -92,7 +94,7 @@ func extract(msg string) []string {
 
 // http/html stuff /////////////////////////////////////////////////////
 
-func titleGet(url string) string {
+func titleGet(url string) (string, error) {
 	// via http://www.reddit.com/r/golang/comments/10awvj/timeout_on_httpget/c6bz49s
 	c := http.Client{
 		Transport: &http.Transport{
@@ -111,7 +113,7 @@ func titleGet(url string) string {
 	r, err := c.Get(url)
 	if err != nil {
 		log.Printf("WTF: could not resolve %s: %s\n", url, err)
-		return ""
+		return "", err
 	}
 	defer r.Body.Close()
 
@@ -120,7 +122,7 @@ func titleGet(url string) string {
 	title = newlineReplacer.ReplaceAllString(title, " ")
 
 	log.Printf("Title for URL %s: %s\n", url, title)
-	return title
+	return title, nil
 }
 
 func titleParseHtml(r io.Reader) string {
@@ -194,7 +196,10 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 	}
 	if prefix == "" {
 		prefix = "Link Info"
+	} else {
+		prefix = newlineReplacer.ReplaceAllString(prefix, " ")
 	}
+	title = newlineReplacer.ReplaceAllString(title, " ")
 	// use notice instead of PrivMsg to avoid bots answering each other
 	conn.Notice(tgt, "["+prefix+"] "+title)
 }
