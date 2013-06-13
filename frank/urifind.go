@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -26,6 +27,8 @@ const httpReadKByte = 100
 // abort HTTP requests if it takes longer than X seconds. Not sure, it’s
 // definitely magic involved. Must be larger than 5.
 const httpGetDeadline = 10
+
+var ignoreDomainsRegex = regexp.MustCompile(`^http://p.nnev.de`)
 
 func UriFind(conn *irc.Conn, line *irc.Line) {
 	defer func() {
@@ -50,6 +53,11 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 		}
 
 		go func(url string) {
+			if ignoreDomainsRegex.MatchString(url) {
+				log.Printf("ignoring this URL: %s", url)
+				return
+			}
+
 			log.Printf("testing URL: %s", url)
 			title := titleGet(url)
 			if title != "" {
