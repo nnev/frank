@@ -9,7 +9,7 @@ import (
 var lastHelps = map[string]time.Time{}
 
 func Help(conn *irc.Conn, line *irc.Line) {
-	if line.Args[0] != conn.Me.Nick {
+	if line.Args[0] != conn.Me().Nick {
 		// no private query, ignore
 		return
 	}
@@ -27,7 +27,7 @@ func Help(conn *irc.Conn, line *irc.Line) {
 
 	lastHelps[line.Nick] = time.Now()
 
-	conn.Privmsg(line.Nick, "It’s a game to find out what "+conn.Me.Nick+" can do.")
+	conn.Privmsg(line.Nick, "It’s a game to find out what "+conn.Me().Nick+" can do.")
 	conn.Privmsg(line.Nick, "1. Most likely I can find out the <title> of an URL, if:")
 	conn.Privmsg(line.Nick, "  – I am in the channel where it is posted")
 	conn.Privmsg(line.Nick, "  – you sent it in a query to me")

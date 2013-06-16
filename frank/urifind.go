@@ -197,7 +197,7 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 	log.Printf("nick=%s, target=%s, title=%s", line.Nick, tgt, title)
 	// if target is our current nick, it was a private message.
 	// Answer the users in this case.
-	if tgt == conn.Me.Nick {
+	if tgt == conn.Me().Nick {
 		tgt = line.Nick
 	}
 	if prefix == "" {

@@ -10,6 +10,7 @@ go get github.com/breunigs/frank
 echo "Modify away!"
 ```
 
+Please note that you need the master branch of the goirc library for frank to compile, i.e. `cd gocode/src/github.com/fluffle/goirc && git checkout master`.
 
 ### Attribution
 

@@ -96,7 +96,7 @@ func answer(conn *irc.Conn, line *irc.Line) {
 	score := strconv.Itoa(data[strings.ToLower(match[1])])
 
 	// if we were the target, it was a private message. Answer user instead
-	if tgt == conn.Me.Nick {
+	if tgt == conn.Me().Nick {
 		tgt = line.Nick
 	}
 	conn.Notice(tgt, "[Karma] "+match[1]+": "+score)
