@@ -208,5 +208,5 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 	}
 	title = newlineReplacer.ReplaceAllString(title, " ")
 	// use notice instead of PrivMsg to avoid bots answering each other
-	conn.Notice(tgt, "["+prefix+"] "+title)
+	conn.Privmsg(tgt, "["+prefix+"] "+title)
 }
