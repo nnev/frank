@@ -61,7 +61,7 @@ func match(conn *irc.Conn, line *irc.Line) {
 
 	if thing == strings.ToLower(line.Nick) {
 		log.Printf("User %s tried to karma her/himself. What a loser!", line.Nick)
-		conn.Notice(line.Nick, "[Karma] Voting on yourself is not supported")
+		conn.Privmsg(line.Nick, "[Karma] Voting on yourself is not supported")
 		return
 	}
 
@@ -97,7 +97,7 @@ func answer(conn *irc.Conn, line *irc.Line) {
 	if tgt == conn.Me().Nick {
 		tgt = line.Nick
 	}
-	conn.Notice(tgt, "[Karma] "+match[1]+": "+score)
+	conn.Privmsg(tgt, "[Karma] "+match[1]+": "+score)
 }
 
 // via http://golang.worleyspace.com/2011/10/blog-post.html
