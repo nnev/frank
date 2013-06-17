@@ -113,12 +113,13 @@ func TitleGet(url string) (string, string, error) {
 	}
 
 	r, err := c.Get(url)
-	lastUrl := r.Request.URL.String()
 	if err != nil {
 		log.Printf("WTF: could not resolve %s: %s\n", url, err)
-		return "", lastUrl, err
+		return "", url, err
 	}
 	defer r.Body.Close()
+
+	lastUrl := r.Request.URL.String()
 
 	// TODO: r.Body → utf8?
 	title := titleParseHtml(io.LimitReader(r.Body, 1024*httpReadKByte))
