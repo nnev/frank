@@ -43,6 +43,14 @@ func Rss(connection *irc.Conn) {
 }
 
 func pollFeed(channel string, feedName string, timeFormat string, uri string) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("MEGA-WTF:pkg:RSS: %v", r)
+			time.Sleep(retryAfter * time.Minute)
+			pollFeed(channel, feedName, timeFormat, uri)
+		}
+	}()
+
 	// this will process all incoming new feed items and discard all that
 	// are somehow erroneous or older than the threshold. It will directly
 	// post any updates.
