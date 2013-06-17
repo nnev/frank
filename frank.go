@@ -35,6 +35,9 @@ func main() {
 					conn.Join(cn)
 				}
 			}
+
+			// handle RSS
+			frank.Rss(conn)
 		})
 
 	// react
