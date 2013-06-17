@@ -64,7 +64,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			}
 
 			log.Printf("testing URL: %s", url)
-			title, err := titleGet(url)
+			title, _, err := TitleGet(url)
 			if err != nil {
 				postTitle(conn, line, err.Error(), "Error")
 			} else if title != "" {
@@ -96,7 +96,7 @@ func extract(msg string) []string {
 
 // http/html stuff /////////////////////////////////////////////////////
 
-func titleGet(url string) (string, error) {
+func TitleGet(url string) (string, string, error) {
 	// via http://www.reddit.com/r/golang/comments/10awvj/timeout_on_httpget/c6bz49s
 	c := http.Client{
 		Transport: &http.Transport{
@@ -113,9 +113,10 @@ func titleGet(url string) (string, error) {
 	}
 
 	r, err := c.Get(url)
+	lastUrl := r.Request.URL.String()
 	if err != nil {
 		log.Printf("WTF: could not resolve %s: %s\n", url, err)
-		return "", err
+		return "", lastUrl, err
 	}
 	defer r.Body.Close()
 
@@ -125,10 +126,10 @@ func titleGet(url string) (string, error) {
 	log.Printf("Title for URL %s: %s\n", url, title)
 
 	if r.StatusCode != 200 {
-		return "", errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
+		return "", lastUrl, errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
 	}
 
-	return title, nil
+	return title, lastUrl, nil
 }
 
 func titleParseHtml(r io.Reader) string {

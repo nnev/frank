@@ -50,6 +50,7 @@ func main() {
 
 			go frank.RaumBang(conn, line)
 			go frank.UriFind(conn, line)
+			go frank.Lmgtfy(conn, line)
 			go frank.Karma(conn, line)
 			go frank.Help(conn, line)
 
