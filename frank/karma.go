@@ -19,8 +19,6 @@ var karmaMatcherRegex = regexp.MustCompile(`^([\d\pL]+)(\+\+|--)(?:$|\s#)`)
 // regex that matches karma info requests
 var karmaAnswerRegex = regexp.MustCompile(`(?i)^karma\s+(?:for\s+)?([\d\pL]+)\??$`)
 
-var isChannelRegex = regexp.MustCompile(`^#`)
-
 // create default and try to read saved file in immediately
 var defaultData = map[string]int{"frank": 9999}
 var data = readData()
@@ -42,7 +40,7 @@ func match(conn *irc.Conn, line *irc.Line) {
 	tgt := line.Args[0]
 	msg := line.Args[1]
 
-	if !isChannelRegex.MatchString(tgt) {
+	if tgt[0:1] != "#" {
 		// love/hate needs to be announced publicly to avoid skewing the
 		// results
 		return
