@@ -32,9 +32,14 @@ func Rss(connection *irc.Conn) {
 	conn = connection
 	// this feels wrong, the missing alignment making it hard to read.
 	// Does anybody have a suggestion how to make this nice in go?
-	go pollFeed("#xxxi3", "i3", timeFormat2, "http://code.stapelberg.de/git/i3/atom/?h=next")
-	go pollFeed("#xxxi3", "i3-faq", timeFormat1, "https://faq.i3wm.org/feeds/rss/")
-	go pollFeed("#xxxchaos-hd", "nn-wiki", timeFormat2, "https://www.noname-ev.de/wiki/index.php?title=Special:RecentChanges&feed=atom")
+	//~ go pollFeed("#i3-test", "i3", timeFormat2, "http://code.stapelberg.de/git/i3/atom/?h=next")
+	go pollFeed("#i3-test", "i3lock", timeFormat2, "http://code.stapelberg.de/git/i3lock/atom/?h=master")
+	go pollFeed("#i3-test", "i3status", timeFormat2, "http://code.stapelberg.de/git/i3status/atom/?h=master")
+	go pollFeed("#i3-test", "i3website", timeFormat2, "http://code.stapelberg.de/git/i3-website/atom/?h=master")
+	go pollFeed("#i3-test", "i3-faq", timeFormat1, "https://faq.i3wm.org/feeds/rss/")
+
+	go pollFeed("#chaos-hd", "nn-wiki", timeFormat2, "https://www.noname-ev.de/wiki/index.php?title=Special:RecentChanges&feed=atom")
+	go pollFeed("#chaos-hd", "nn-planet", timeFormat2, "http://blogs.noname-ev.de/atom.xml")
 }
 
 func pollFeed(channel string, feedName string, timeFormat string, uri string) {
@@ -84,14 +89,14 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 			cntS := strconv.Itoa(cnt)
 			maxS := strconv.Itoa(maxItems)
 			msg := "::" + feedName + ":: had " + cntS + " updates, showing the latest " + maxS
-			conn.Notice( /*channel*/ "xeen", msg)
+			conn.Privmsg(channel, msg)
 			postitems = postitems[cnt-maxItems : cnt]
 		}
 
 		// newer items appear first in feeds, so reverse them here to keep
 		// the order in line with how IRC wprks
 		for i := len(postitems) - 1; i >= 0; i -= 1 {
-			conn.Notice( /*channel*/ "xeen", postitems[i])
+			conn.Privmsg(channel, postitems[i])
 			log.Printf("RSS-post: %s", postitems[i])
 		}
 	}
