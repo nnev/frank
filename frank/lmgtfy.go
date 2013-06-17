@@ -36,8 +36,8 @@ func Lmgtfy(conn *irc.Conn, line *irc.Line) {
 	t, lastUrl, err := TitleGet(u)
 
 	if err != nil {
-		conn.Notice(tgt, "[LMGTFY] "+lastUrl)
+		conn.Privmsg(tgt, "[LMGTFY] "+lastUrl)
 	} else {
-		conn.Notice(tgt, "[LMGTFY] "+t+" @ "+lastUrl)
+		conn.Privmsg(tgt, "[LMGTFY] "+t+" @ "+lastUrl)
 	}
 }
