@@ -81,9 +81,9 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 			author := item.Author.Name
 
 			if author == "" {
-				postitems = append(postitems, "::"+feedName+":: "+item.Title+" @ "+url)
+				postitems = appendIfMiss(postitems, "::"+feedName+":: "+item.Title+" @ "+url)
 			} else {
-				postitems = append(postitems, "::"+feedName+":: "+item.Title+" @ "+url+" (by "+author+")")
+				postitems = appendIfMiss(postitems, "::"+feedName+":: "+item.Title+" @ "+url+" (by "+author+")")
 			}
 		}
 
@@ -128,4 +128,14 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 // unused default handler
 func chanHandler(feed *rss.Feed, newchannels []*rss.Channel) {
 	log.Printf("RSS: %d new channel(s) in %s\n", len(newchannels), feed.Url)
+}
+
+// append string to slice only if it’s not already present.
+func appendIfMiss(slice []string, s string) []string {
+	for _, elm := range slice {
+		if elm == s {
+			return slice
+		}
+	}
+	return append(slice, s)
 }
