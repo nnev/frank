@@ -9,11 +9,12 @@ import (
 )
 
 const (
-	//~ instaJoin = "#chaos-hd"
-	instaJoin    = "#test"
-	nickServPass = ""
-	ircServer    = "irc.twice-irc.de"
-	botNick      = "frank"
+	production          = false
+	instaJoinProduction = "#chaos-hd #i3 #noname-ev"
+	instaJoinDebug      = "#test"
+	nickServPass        = ""
+	ircServer           = "irc.twice-irc.de"
+	botNick             = "frank"
 )
 
 func main() {
@@ -30,6 +31,16 @@ func main() {
 		func(conn *irc.Conn, line *irc.Line) {
 			log.Printf("Connected as: %s\n", conn.Me().Nick)
 			conn.Privmsg("nickserv", "identify "+nickServPass)
+
+			var instaJoin string
+			if production {
+				instaJoin = instaJoinProduction
+			} else {
+				instaJoin = instaJoinDebug
+			}
+
+			log.Printf("AutoJoining: %s\n", instaJoin)
+
 			for _, cn := range strings.Split(instaJoin, " ") {
 				if cn != "" {
 					conn.Join(cn)
@@ -60,19 +71,21 @@ func main() {
 			//~ log.Printf("      Debug: tgt: %s, msg: %s\n", tgt, msg)
 		})
 
-	// auto follow invites
-	c.HandleFunc("INVITE",
-		func(conn *irc.Conn, line *irc.Line) {
-			tgt := line.Args[0]
-			cnnl := line.Args[1]
-			if conn.Me().Nick != tgt {
-				log.Printf("WTF: received invite for %s but target was %s\n")
-				return
-			}
+	// auto follow invites only in debug mode
+	if !production {
+		c.HandleFunc("INVITE",
+			func(conn *irc.Conn, line *irc.Line) {
+				tgt := line.Args[0]
+				cnnl := line.Args[1]
+				if conn.Me().Nick != tgt {
+					log.Printf("WTF: received invite for %s but target was %s\n")
+					return
+				}
 
-			log.Printf("Following invite for channel: %s\n", cnnl)
-			conn.Join(cnnl)
-		})
+				log.Printf("Following invite for channel: %s\n", cnnl)
+				conn.Join(cnnl)
+			})
+	}
 
 	// auto deop frank
 	c.HandleFunc("MODE",
