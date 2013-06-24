@@ -33,10 +33,10 @@ func Rss(connection *irc.Conn) {
 	// this feels wrong, the missing alignment making it hard to read.
 	// Does anybody have a suggestion how to make this nice in go?
 	//~ go pollFeed("#i3-test", "i3", timeFormat2, "http://code.stapelberg.de/git/i3/atom/?h=next")
-	go pollFeed("#i3-test", "i3lock", timeFormat2, "http://code.stapelberg.de/git/i3lock/atom/?h=master")
-	go pollFeed("#i3-test", "i3status", timeFormat2, "http://code.stapelberg.de/git/i3status/atom/?h=master")
-	go pollFeed("#i3-test", "i3website", timeFormat2, "http://code.stapelberg.de/git/i3-website/atom/?h=master")
-	go pollFeed("#i3-test", "i3-faq", timeFormat1, "https://faq.i3wm.org/feeds/rss/")
+	go pollFeed("#i3", "i3lock", timeFormat2, "http://code.stapelberg.de/git/i3lock/atom/?h=master")
+	go pollFeed("#i3", "i3status", timeFormat2, "http://code.stapelberg.de/git/i3status/atom/?h=master")
+	go pollFeed("#i3", "i3website", timeFormat2, "http://code.stapelberg.de/git/i3-website/atom/?h=master")
+	go pollFeed("#i3", "i3faq", timeFormat1, "https://faq.i3wm.org/feeds/rss/")
 
 	go pollFeed("#chaos-hd", "nn-wiki", timeFormat2, "https://www.noname-ev.de/wiki/index.php?title=Special:RecentChanges&feed=atom")
 	go pollFeed("#chaos-hd", "nn-planet", timeFormat2, "http://blogs.noname-ev.de/atom.xml")
@@ -114,7 +114,7 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 
 	// check for updates infinite loop
 	for {
-		log.Printf("RSS: updating %s", feedName)
+		//~ log.Printf("RSS: updating %s", feedName)
 		if err := feed.Fetch(uri, nil); err != nil {
 			log.Printf("RSS: [e] %s: %s", uri, err)
 			time.Sleep(retryAfter * time.Minute)
