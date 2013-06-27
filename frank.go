@@ -57,8 +57,9 @@ func main() {
 			//~ tgt := line.Args[0]
 			//~ msg := line.Args[1]
 
-			// ignore eicar, the bot we love to hate
-			if line.Nick == "eicar" {
+			// ignore eicar, the bot we love to hate.
+			// Also ignore i3-bot.
+			if line.Nick == "eicar" || line.Nick == "i3" {
 				return
 			}
 
