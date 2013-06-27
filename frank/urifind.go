@@ -78,7 +78,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 // regexing ////////////////////////////////////////////////////////////
 
 func extract(msg string) []string {
-	find := exec.Command("./urifind", "-u")
+	find := exec.Command("./urifind", "-u", "-S", "http", "-S", "https")
 	pipe, err := find.StdinPipe()
 	if err != nil {
 		log.Printf("WTF: couldn’t open stdin pipe to urifind: %s", err)
