@@ -1,6 +1,7 @@
 package frank
 
 import (
+	"code.google.com/p/go.net/html"
 	irc "github.com/fluffle/goirc/client"
 	rss "github.com/jteeuwen/go-pkg-rss"
 	"log"
@@ -78,12 +79,13 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 			if len(item.Links) > 0 {
 				url = item.Links[0].Href
 			}
-			author := item.Author.Name
+			author := html.UnescapeString(item.Author.Name)
+			title := html.UnescapeString(item.Title)
 
 			if author == "" {
-				postitems = appendIfMiss(postitems, "::"+feedName+":: "+item.Title+" @ "+url)
+				postitems = appendIfMiss(postitems, "::"+feedName+":: "+title+" @ "+url)
 			} else {
-				postitems = appendIfMiss(postitems, "::"+feedName+":: "+item.Title+" @ "+url+" (by "+author+")")
+				postitems = appendIfMiss(postitems, "::"+feedName+":: "+title+" @ "+url+" (by "+author+")")
 			}
 		}
 
