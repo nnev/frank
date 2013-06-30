@@ -66,7 +66,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			log.Printf("testing URL: %s", url)
 			title, _, err := TitleGet(url)
 			if err != nil {
-				postTitle(conn, line, err.Error(), "Error")
+				//postTitle(conn, line, err.Error(), "Error")
 			} else if title != "" {
 				postTitle(conn, line, title, "")
 				addCache(url, title)
