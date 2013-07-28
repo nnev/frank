@@ -70,8 +70,12 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 
 			// ignore items that were posted before frank booted or are older
 			// than “freshness” minutes
-			if ignoreBefore.After(pubdate) || time.Since(pubdate) >= freshness*time.Minute {
-				log.Printf("RSS: skipping old post for %s (posted at %s)", feedName, pubdate)
+			if ignoreBefore.After(pubdate) {
+				log.Printf("RSS %s: skipping posts made before booting (posted: %s, booted: %s)", feedName, pubdate, ignoreBefore)
+				continue
+			}
+			if time.Since(pubdate) >= freshness*time.Minute {
+				log.Printf("RSS %s: skipping non-fresh post (posted: %s, time_ago: %s)", feedName, pubdate, time.Since(pubdate))
 				continue
 			}
 
