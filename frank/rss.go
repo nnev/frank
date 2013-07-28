@@ -13,7 +13,7 @@ import (
 const checkEvery = 3
 
 // ignore all posts that are older than X minutes
-const freshness = 10
+const freshness = 90
 
 // if there’s an error reading a feed, retry after X minutes
 const retryAfter = 9
