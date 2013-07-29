@@ -107,7 +107,7 @@ func main() {
 				case 'o':
 					if modeop && line.Args[nickIndex] == conn.Me().Nick {
 						cn := line.Args[0]
-						conn.Mode(cn, "+vo", conn.Me().Nick, conn.Me().Nick)
+						conn.Mode(cn, "+v-o", conn.Me().Nick, conn.Me().Nick)
 						conn.Privmsg(cn, line.Nick+": SKYNET® Protection activated")
 						return
 					}
