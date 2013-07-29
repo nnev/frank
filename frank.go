@@ -2,27 +2,19 @@ package main
 
 import (
 	"flag"
+	frankconf "github.com/breunigs/frank/config"
 	"github.com/breunigs/frank/frank"
 	irc "github.com/fluffle/goirc/client"
 	"log"
 	"strings"
 )
 
-const (
-	production          = false
-	instaJoinProduction = "#chaos-hd #i3 #noname-ev"
-	instaJoinDebug      = "#test"
-	nickServPass        = ""
-	ircServer           = "irc.twice-irc.de"
-	botNick             = "frank"
-)
-
 func main() {
 	flag.Parse() // parses the logging flags. TODO
 
-	cfg := irc.NewConfig(botNick, botNick, "Frank Böterrich der Zweite")
+	cfg := irc.NewConfig(frankconf.BotNick, frankconf.BotNick, "Frank Böterrich der Zweite")
 	cfg.SSL = true
-	cfg.Server = ircServer
+	cfg.Server = frankconf.IrcServer
 	cfg.NewNick = func(n string) string { return n + "_" }
 	c := irc.Client(cfg)
 
@@ -30,13 +22,13 @@ func main() {
 	c.HandleFunc(irc.CONNECTED,
 		func(conn *irc.Conn, line *irc.Line) {
 			log.Printf("Connected as: %s\n", conn.Me().Nick)
-			conn.Privmsg("nickserv", "identify "+nickServPass)
+			conn.Privmsg("nickserv", "identify "+frankconf.NickServPass)
 
 			var instaJoin string
-			if production {
-				instaJoin = instaJoinProduction
+			if frankconf.Production {
+				instaJoin = frankconf.InstaJoinProduction
 			} else {
-				instaJoin = instaJoinDebug
+				instaJoin = frankconf.InstaJoinDebug
 			}
 
 			log.Printf("AutoJoining: %s\n", instaJoin)
@@ -68,48 +60,62 @@ func main() {
 			go frank.Lmgtfy(conn, line)
 			go frank.Karma(conn, line)
 			go frank.Help(conn, line)
+			go frank.ItsAlive(conn, line)
 
 			//~ log.Printf("      Debug: tgt: %s, msg: %s\n", tgt, msg)
 		})
 
-	// auto follow invites only in debug mode
-	if !production {
-		c.HandleFunc("INVITE",
-			func(conn *irc.Conn, line *irc.Line) {
-				tgt := line.Args[0]
-				cnnl := line.Args[1]
-				if conn.Me().Nick != tgt {
-					log.Printf("WTF: received invite for %s but target was %s\n")
-					return
-				}
+	c.HandleFunc("INVITE",
+		func(conn *irc.Conn, line *irc.Line) {
+			tgt := line.Args[0]
+			cnnl := line.Args[1]
 
-				log.Printf("Following invite for channel: %s\n", cnnl)
-				conn.Join(cnnl)
-			})
-	}
+			// auto follow invites only in debug mode or if asked by master
+			if frankconf.Production && line.Nick != frankconf.Master {
+				log.Printf("only following invites by %s in production\n", frankconf.Master)
+				return
+			}
+
+			if conn.Me().Nick != tgt {
+				log.Printf("WTF: received invite for %s but target was %s\n", conn.Me().Nick, tgt)
+				return
+			}
+
+			log.Printf("Following invite for channel: %s\n", cnnl)
+			conn.Join(cnnl)
+		})
 
 	// auto deop frank
 	c.HandleFunc("MODE",
 		func(conn *irc.Conn, line *irc.Line) {
-			if len(line.Args) != 3 {
+			log.Printf("Mode change array length: %s", len(line.Args))
+			log.Printf("Mode changes: %s", line.Args)
+
+			if len(line.Args) < 3 {
 				// mode statement cannot be not in a channel, so ignore
 				return
 			}
 
-			if line.Args[2] != conn.Me().Nick {
-				// not referring to us
-				return
+			var modeop bool // true => add mode, false => remove mode
+			var nickIndex int = 2
+			for i := 0; i < len(line.Args[1]); i++ {
+				switch m := line.Args[1][i]; m {
+				case '+':
+					modeop = true
+				case '-':
+					modeop = false
+				case 'o':
+					if modeop && line.Args[nickIndex] == conn.Me().Nick {
+						cn := line.Args[0]
+						conn.Mode(cn, "+vo", conn.Me().Nick, conn.Me().Nick)
+						conn.Privmsg(cn, line.Nick+": SKYNET® Protection activated")
+						return
+					}
+					nickIndex += 1
+				default:
+					nickIndex += 1
+				}
 			}
-
-			if line.Args[1] != "+o" {
-				// not relevant
-				return
-			}
-
-			cn := line.Args[0]
-			conn.Mode(cn, "+v", conn.Me().Nick)
-			conn.Mode(cn, "-o", conn.Me().Nick)
-			conn.Privmsg(cn, line.Nick+": SKYNET® Protection activated")
 		})
 
 	// disconnect
