@@ -30,6 +30,9 @@ const httpReadKByte = 100
 // definitely magic involved. Must be larger than 5.
 const httpGetDeadline = 10
 
+// don’t repost the same title within this period
+const noRepostWithinSeconds = 10
+
 // new line replace regex
 var newlineReplacer = regexp.MustCompile(`\s+`)
 
@@ -51,7 +54,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			continue
 		}
 
-		if title := findCache(url); title != "" {
+		if title := cacheGetTitleByUrl(url); title != "" {
 			log.Printf("using cache for URL: %s", url)
 			postTitle(conn, line, title, "Cache Info")
 			continue
@@ -69,7 +72,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 				//postTitle(conn, line, err.Error(), "Error")
 			} else if title != "" {
 				postTitle(conn, line, title, "")
-				addCache(url, title)
+				cacheAdd(url, title)
 			}
 		}(url)
 	}
@@ -174,7 +177,7 @@ type Cache struct {
 var cache = [cacheSize]Cache{}
 var cacheIndex = 0
 
-func addCache(url string, title string) {
+func cacheAdd(url string, title string) {
 	if len(cache) == cacheIndex {
 		cacheIndex = 0
 	}
@@ -182,7 +185,7 @@ func addCache(url string, title string) {
 	cacheIndex += 1
 }
 
-func findCache(url string) string {
+func cacheGetTitleByUrl(url string) string {
 	for _, cc := range cache {
 		if cc.url == url && time.Since(cc.date).Hours() <= cacheValidHours {
 			return cc.title
@@ -191,10 +194,27 @@ func findCache(url string) string {
 	return ""
 }
 
+func cacheGetSecondsToLastPost(title string) int {
+	var secondsAgo = int(^uint(0) >> 1)
+	for _, cc := range cache {
+		var a = int(time.Since(cc.date).Seconds())
+		if cc.title == title && a < secondsAgo {
+			secondsAgo = a
+		}
+	}
+	return secondsAgo
+}
+
 // util ////////////////////////////////////////////////////////////////
 
 func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 	tgt := line.Args[0]
+
+	secondsAgo := cacheGetSecondsToLastPost(title)
+	if secondsAgo <= noRepostWithinSeconds {
+		log.Printf("Skipping, because posted %d seconds ago (“%s”)", secondsAgo, title)
+		return
+	}
 
 	log.Printf("nick=%s, target=%s, title=%s", line.Nick, tgt, title)
 	// if target is our current nick, it was a private message.
