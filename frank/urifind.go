@@ -38,6 +38,8 @@ var newlineReplacer = regexp.MustCompile(`\s+`)
 
 var ignoreDomainsRegex = regexp.MustCompile(`^http://p\.nnev\.de`)
 
+var noSpoilerRegex = regexp.MustCompile(`don't spoiler`)
+
 func UriFind(conn *irc.Conn, line *irc.Line) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -46,6 +48,10 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 	}()
 
 	msg := line.Args[1]
+
+	if noSpoilerRegex.MatchString(msg) {
+		return
+	}
 
 	urls := extract(msg)
 
