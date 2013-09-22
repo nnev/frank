@@ -235,6 +235,10 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 		prefix = newlineReplacer.ReplaceAllString(prefix, " ")
 	}
 	title = newlineReplacer.ReplaceAllString(title, " ")
-	// use notice instead of PrivMsg to avoid bots answering each other
+	// the IRC spec states that notice should be used instead of msg
+	// and that bots should not react to notice at all. However, no
+	// real world bot adheres to this. Furthermore, people who can’t
+	// configure their client to not highlight them on notices will
+	// complain.
 	conn.Privmsg(tgt, "["+prefix+"] "+title)
 }
