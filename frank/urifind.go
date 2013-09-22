@@ -50,6 +50,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 	msg := line.Args[1]
 
 	if noSpoilerRegex.MatchString(msg) {
+		log.Printf("not spoilering this line: %s", msg)
 		return
 	}
 
