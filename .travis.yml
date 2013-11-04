@@ -2,3 +2,8 @@ language: go
 go:
  - 1.1
  - tip
+
+before_install:
+  - "GOPATH=$HOME/gopath" && go get github.com/fluffle/goirc
+  - "cd $HOME/gopath/src/github.com/fluffle/goirc && git branch"
+  - "cd $HOME/gopath/src/github.com/fluffle/goirc && git checkout master"
