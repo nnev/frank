@@ -62,6 +62,7 @@ func main() {
 			go frank.Karma(conn, line)
 			go frank.Help(conn, line)
 			go frank.ItsAlive(conn, line)
+			go frank.Highlight(conn, line)
 
 			//~ log.Printf("      Debug: tgt: %s, msg: %s\n", tgt, msg)
 		})

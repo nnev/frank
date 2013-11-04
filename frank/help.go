@@ -27,16 +27,26 @@ func Help(conn *irc.Conn, line *irc.Line) {
 
 	lastHelps[line.Nick] = time.Now()
 
-	conn.Privmsg(line.Nick, "It’s a game to find out what "+conn.Me().Nick+" can do.")
-	conn.Privmsg(line.Nick, "1. Most likely I can find out the <title> of an URL, if:")
-	conn.Privmsg(line.Nick, "  – I am in the channel where it is posted")
-	conn.Privmsg(line.Nick, "  – you sent it in a query to me")
-	conn.Privmsg(line.Nick, "  I’m going to cache that URL for a certain amount of time.")
-	conn.Privmsg(line.Nick, "2. There’s a karma system. You can’t vote on yourself.")
+	conn.Privmsg(line.Nick, "1. Test your IRC client’s highlighting:")
+	conn.Privmsg(line.Nick, "  – /msg frank high")
+	conn.Privmsg(line.Nick, "  – /msg frank high custom_text")
+	conn.Privmsg(line.Nick, "  – /msg frank highpub custom_text")
+	conn.Privmsg(line.Nick, "“high” sends you a private message, “highpub” posts to #test.")
+	conn.Privmsg(line.Nick, "Your nick will be used unless custom_text is defined. Delay is always 5 seconds.")
+	conn.Privmsg(line.Nick, " ")
+
+	conn.Privmsg(line.Nick, "2. I won’t spoiler URLs if you add “no spoiler” to your message")
+	conn.Privmsg(line.Nick, " ")
+
+	conn.Privmsg(line.Nick, "3. There’s a karma system. You can’t vote on yourself.")
 	conn.Privmsg(line.Nick, "  – thing++ # optional comment")
 	conn.Privmsg(line.Nick, "  – thing-- # thing may be alphanumerical, Unicode is supported")
 	conn.Privmsg(line.Nick, "  – karma for thing  //  karma thing  //  karma thing?")
-	conn.Privmsg(line.Nick, "3. I’ll answer to !raum in certain channels.")
+	conn.Privmsg(line.Nick, " ")
+
+	conn.Privmsg(line.Nick, "4. I’ll answer to !raum in certain channels.")
+	conn.Privmsg(line.Nick, " ")
+
 	conn.Privmsg(line.Nick, "If you need more details, please look at my source:")
 	conn.Privmsg(line.Nick, "https://github.com/breunigs/frank")
 
