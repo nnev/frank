@@ -23,8 +23,6 @@ func Highlight(conn *irc.Conn, line *irc.Line) {
 	}
 
 	msg := line.Args[1]
-	log.Printf("derp: %s\n", msg)
-
 	if !strings.HasPrefix(msg, "high") {
 		// no highlight request, ignore
 		return
