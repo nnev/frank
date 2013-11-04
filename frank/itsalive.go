@@ -14,7 +14,7 @@ func ItsAlive(conn *irc.Conn, line *irc.Line) {
 	}
 
 	msg := line.Args[1]
-	if !strings.HasPrefix(msg, "msg #") {
+	if !strings.HasPrefix(msg, "msg ") {
 		//~ log.Printf("unknown prefix for: %s", msg)
 		// only accept valid commands
 		return
