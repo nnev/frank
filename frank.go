@@ -14,6 +14,7 @@ func main() {
 
 	cfg := irc.NewConfig(frankconf.BotNick, frankconf.BotNick, "Frank Böterrich der Zweite")
 	cfg.SSL = true
+	cfg.Flood = true
 	cfg.Server = frankconf.IrcServer
 	cfg.NewNick = func(n string) string { return n + "_" }
 	c := irc.Client(cfg)
