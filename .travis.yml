@@ -4,6 +4,8 @@ go:
  - tip
 
 before_install:
-  - "GOPATH=$HOME/gopath" && go get github.com/fluffle/goirc
-  - "cd $HOME/gopath/src/github.com/fluffle/goirc && git branch"
-  - "cd $HOME/gopath/src/github.com/fluffle/goirc && git checkout master"
+  - "export GOPATH=$HOME/gopath"
+  - "go get github.com/fluffle/goirc"
+  - "cd $HOME/gopath/src/github.com/fluffle/goirc"
+  - "git branch"
+  - "git checkout master"
