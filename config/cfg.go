@@ -8,5 +8,5 @@ const (
 	IrcServer           = "irc.twice-irc.de"
 	BotNick             = "frank"
 	Master              = "xeen"
-	OpOkIn 							= "#test2 #chaos-hd"
+	OpOkIn              = "#test2 #chaos-hd"
 )
