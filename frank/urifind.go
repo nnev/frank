@@ -9,7 +9,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
