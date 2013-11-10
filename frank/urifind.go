@@ -88,20 +88,37 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 // regexing ////////////////////////////////////////////////////////////
 
 func extract(msg string) []string {
-	find := exec.Command("./urifind", "-u", "-S", "http", "-S", "https")
-	pipe, err := find.StdinPipe()
-	if err != nil {
-		log.Printf("WTF: couldn’t open stdin pipe to urifind: %s", err)
-		return nil
+	results := make([]string, 0)
+	for idx := strings.Index(msg, "http"); idx > -1; idx = strings.Index(msg, "http") {
+		url := msg[idx:]
+		if !strings.HasPrefix(url, "http://") &&
+			!strings.HasPrefix(url, "https://") {
+			msg = msg[idx+len("http"):]
+			continue
+		}
+
+		// End on commas, but only if they are followed by a space.
+		// spiegel.de URLs have commas in them, that would be a
+		// false positive otherwise.
+		if end := strings.Index(url, ", "); end > -1 {
+			url = url[:end]
+		}
+
+		// End on closing paren, but only if there is an opening
+		// paren before the URL (should fix most false-positives).
+		if end := strings.Index(url, ")"); idx > 0 && msg[idx-1] == '(' && end > -1 {
+			url = url[:end]
+		}
+
+		// Whitespace always ends a URL.
+		if end := strings.IndexAny(url, " \t"); end > -1 {
+			url = url[:end]
+		}
+
+		results = append(results, url)
+		msg = msg[idx+len(url):]
 	}
-	pipe.Write([]byte(msg))
-	pipe.Close()
-	out, err := find.Output()
-	if err != nil {
-		log.Printf("WTF: urlfind failed with: %s", err)
-		return nil
-	}
-	return strings.Split(strings.TrimSpace(string(out)), "\n")
+	return results
 }
 
 // http/html stuff /////////////////////////////////////////////////////
