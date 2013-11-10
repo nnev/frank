@@ -18,4 +18,3 @@ The project is ISC-licensed, but all other software used remains under their res
 
 - Go, see http://golang.org/LICENSE
 - `goirc` © Alex Bramley; same license as Go
-- The `urifind` executable is a modified version from `liburi-find-perl`. It uses `URI::Find::Schemeless` instead of `URI::Find` but has no further changes. © 2003 Darren Chamberlain; same license as Perl
