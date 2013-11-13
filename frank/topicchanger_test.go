@@ -14,9 +14,9 @@ func TestUpdateTopicText(t *testing.T) {
 	topics["Verein | 2b || !2b | morgen komische Topics"] = "Verein | 2b || !2b | heute komische Topics"
 	topics["Verein | 2b || !2b | heute komische Topics"] = "Verein | 2b || !2b"
 
-	for to, from := range topics {
-		if x := updateTopicText(to); x != from {
-			t.Errorf("updateTopicText(%v) = %v, want %v", to, x, from)
+	for from, to := range topics {
+		if x := updateTopicText(from); x != to {
+			t.Errorf("updateTopicText(%v)\n GOT: %v\nWANT: %v", from, x, to)
 		}
 	}
 }
