@@ -18,6 +18,7 @@ func main() {
 	cfg.Server = frankconf.IrcServer
 	cfg.NewNick = func(n string) string { return n + "_" }
 	c := irc.Client(cfg)
+	c.EnableStateTracking()
 
 	// connect
 	c.HandleFunc(irc.CONNECTED,
@@ -42,6 +43,9 @@ func main() {
 
 			// handle RSS
 			frank.Rss(conn)
+
+			// watch topics and maybe change them on midnight
+			go frank.TopicChanger(conn)
 		})
 
 	// react
@@ -114,7 +118,7 @@ func main() {
 					channel := line.Args[0]
 
 					if strings.Contains(" "+frankconf.OpOkIn+" ", " "+channel+" ") {
-						conn.Privmsg(channel, "Unbelievable "+line.Nick+"! http://yrden.de/f1.ogg")
+						conn.Privmsg(channel, "Unbelievable "+line.Nick+", you… http://yrden.de/f1.ogg")
 					} else {
 						conn.Mode(channel, "+v-o", conn.Me().Nick, conn.Me().Nick)
 						conn.Privmsg(channel, line.Nick+": SKYNET® Protection activated")
