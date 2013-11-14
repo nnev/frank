@@ -83,6 +83,13 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 			if len(item.Links) > 0 {
 				url = item.Links[0].Href
 			}
+
+			if isRecentUrl(url) {
+				continue
+			}
+
+			addRecentUrl(url)
+
 			author := html.UnescapeString(item.Author.Name)
 			title := html.UnescapeString(item.Title)
 
@@ -144,4 +151,28 @@ func appendIfMiss(slice []string, s string) []string {
 		}
 	}
 	return append(slice, s)
+}
+
+// LIFO that stores the recent posted URLs.
+// Used to avoid posting entries multiple times that have been
+// erroneously detected as new by the RSS library.
+
+var recent []string = make([]string, 50)
+var recentIndex = 0
+
+func addRecentUrl(url string) {
+	recent[recentIndex] = url
+	recentIndex += 1
+	if len(recent) == recentIndex {
+		recentIndex = 0
+	}
+}
+
+func isRecentUrl(url string) bool {
+	for _, a := range recent {
+		if url == a {
+			return true
+		}
+	}
+	return false
 }
