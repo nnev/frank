@@ -201,7 +201,7 @@ func titleParseHtml(r io.Reader) (string, string) {
 			return
 		}
 
-		if tweetPicUrl == "" && hasClass(n, "media-thumbnail") {
+		if tweetPicUrl == "" && hasClass(n, "media-thumbnail") && !hasClass(n, "profile-picture") {
 			attrVal := getAttr(n, "data-url")
 			if attrVal != "" {
 				tweetPicUrl = attrVal
@@ -217,12 +217,12 @@ func titleParseHtml(r io.Reader) (string, string) {
 	}
 	f(doc)
 
-	// cleanu
+	// cleanup
 	tweet := ""
 	if tweetText != "" {
 		tweetText = twitterPicsRegex.ReplaceAllString(tweetText, "")
 		tweetUser = strings.Replace(tweetUser, "@", "(@", 1) + "): "
-		tweet = tweetUser + tweetText + tweetPicUrl
+		tweet = tweetUser + tweetText + " " + tweetPicUrl
 		tweet = clean(tweet)
 	}
 
