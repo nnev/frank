@@ -9,5 +9,5 @@ const (
 	BotNick             = "frank"
 	Master              = "xeen"
 	OpOkIn              = "#test #test2 #chaos-hd"
-	TopicChanger				= "#test2 #chaos-hd"
+	TopicChanger        = "#test2 #chaos-hd"
 )
