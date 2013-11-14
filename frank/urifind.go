@@ -16,10 +16,10 @@ import (
 )
 
 // how many URLs can the cache store
-const cacheSize = 50
+const cacheSize = 100
 
 // how many hours an entry should be considered valid
-const cacheValidHours = 12
+const cacheValidHours = 24
 
 // how many kilo bytes should be considered when looking for the title
 // tag.
@@ -30,12 +30,17 @@ const httpReadKByte = 100
 const httpGetDeadline = 10
 
 // don’t repost the same title within this period
-const noRepostWithinSeconds = 10
+const noRepostWithinSeconds = 30
 
-// new line replace regex
-var newlineReplacer = regexp.MustCompile(`\s+`)
+// matches all whitespace and zero bytes. Additionally, all Unicode
+// characters of class Cf (format chars, e.g. right-to-left) and Cc
+// (control chars) are matched.
+var whitespaceRegex = regexp.MustCompile(`[\s\0\p{Cf}\p{Cc}]+`)
 
 var ignoreDomainsRegex = regexp.MustCompile(`^http://p\.nnev\.de`)
+
+var twitterDomainRegex = regexp.MustCompile(`(?i)^https?://(?:[a-z0-9]\.)?twitter.com`)
+var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9]+(?:\b|$)`)
 
 var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) spoiler`)
 
@@ -148,46 +153,113 @@ func TitleGet(url string) (string, string, error) {
 	lastUrl := r.Request.URL.String()
 
 	// TODO: r.Body → utf8?
-	title := titleParseHtml(io.LimitReader(r.Body, 1024*httpReadKByte))
-	title = newlineReplacer.ReplaceAllString(title, " ")
-	log.Printf("Title for URL %s: %s\n", url, title)
+	title, tweet := titleParseHtml(io.LimitReader(r.Body, 1024*httpReadKByte))
 
 	if r.StatusCode != 200 {
 		return "", lastUrl, errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
 	}
 
+	if tweet != "" && twitterDomainRegex.MatchString(lastUrl) {
+		title = tweet
+	}
+
+	log.Printf("Title for URL %s: %s\n", url, title)
+
 	return title, lastUrl, nil
 }
 
-func titleParseHtml(r io.Reader) string {
+// parses the incoming HTML fragment and tries to extract text from
+// suitable tags. Currently this is the page’s title tag and tweets
+// when the HTML-code is similar enough to twitter.com. Returns
+// title and tweet.
+func titleParseHtml(r io.Reader) (string, string) {
 	doc, err := html.Parse(r)
 	if err != nil {
-		log.Printf("WTF: html parser blew up: %s\r\n", err)
-		return ""
+		log.Printf("WTF: html parser blew up: %s\n", err)
+		return "", ""
 	}
 
 	title := ""
+	tweetText := ""
+	tweetUser := ""
+	tweetPicUrl := ""
 
 	var f func(*html.Node)
 	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.DataAtom == atom.Title {
-			title = ""
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				if c.Type != html.TextNode {
-					continue
-				}
-				title += c.Data
-			}
+		if title == "" && n.Type == html.ElementNode && n.DataAtom == atom.Title {
+			title = extractText(n)
+			return
+		}
 
-		} else { // recurse down
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				f(c)
+		if tweetText == "" && hasClass(n, "tweet-text") {
+			tweetText = extractText(n)
+			return
+		}
+
+		if tweetUser == "" && hasClass(n, "js-user-profile-link") {
+			tweetUser = extractText(n)
+			return
+		}
+
+		if tweetPicUrl == "" && hasClass(n, "media-thumbnail") {
+			attrVal := getAttr(n, "data-url")
+			if attrVal != "" {
+				tweetPicUrl = attrVal
+				return
 			}
 		}
+
+		// recurse down
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+
 	}
 	f(doc)
 
-	return strings.TrimSpace(title)
+	// cleanu
+	tweet := ""
+	if tweetText != "" {
+		tweetText = twitterPicsRegex.ReplaceAllString(tweetText, "")
+		tweetUser = strings.Replace(tweetUser, "@", "(@", 1) + "): "
+		tweet = tweetUser + tweetText + tweetPicUrl
+		tweet = clean(tweet)
+	}
+
+	return strings.TrimSpace(title), strings.TrimSpace(tweet)
+}
+
+func extractText(n *html.Node) string {
+	text := ""
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		if c.Type == html.TextNode {
+			text += c.Data
+		} else {
+			text += extractText(c)
+		}
+	}
+	return clean(text)
+}
+
+func hasClass(n *html.Node, class string) bool {
+	if n.Type != html.ElementNode {
+		return false
+	}
+
+	class = " " + strings.TrimSpace(class) + " "
+	if strings.Contains(" "+getAttr(n, "class")+" ", class) {
+		return true
+	}
+	return false
+}
+
+func getAttr(n *html.Node, findAttr string) string {
+	for _, attr := range n.Attr {
+		if attr.Key == findAttr {
+			return attr.Val
+		}
+	}
+	return ""
 }
 
 // Cache ///////////////////////////////////////////////////////////////
@@ -248,13 +320,18 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 	if prefix == "" {
 		prefix = "Link Info"
 	} else {
-		prefix = newlineReplacer.ReplaceAllString(prefix, " ")
+		prefix = clean(prefix)
 	}
-	title = newlineReplacer.ReplaceAllString(title, " ")
+	title = clean(title)
 	// the IRC spec states that notice should be used instead of msg
 	// and that bots should not react to notice at all. However, no
 	// real world bot adheres to this. Furthermore, people who can’t
 	// configure their client to not highlight them on notices will
 	// complain.
 	conn.Privmsg(tgt, "["+prefix+"] "+title)
+}
+
+func clean(text string) string {
+	text = whitespaceRegex.ReplaceAllString(text, " ")
+	return strings.TrimSpace(text)
 }
