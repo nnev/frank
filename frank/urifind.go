@@ -200,8 +200,9 @@ func titleParseHtml(r io.Reader) (string, string) {
 			tweetUser = extractText(n)
 			return
 		}
-
-		if tweetPicUrl == "" && hasClass(n, "media-thumbnail") && !hasClass(n, "profile-picture") {
+		
+		isMedia := hasClass(n, "media") || hasClass(n, "media-thumbnail")
+		if tweetPicUrl == "" && isMedia && !hasClass(n, "profile-picture") {
 			attrVal := getAttr(n, "data-url")
 			if attrVal != "" {
 				tweetPicUrl = attrVal
