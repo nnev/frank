@@ -13,7 +13,7 @@ const hostToPing = "chaostreff.vpn.zekjur.net"
 // only answer !raum from this channel
 const bangRaumChannel = "#chaos-hd"
 
-var bangRaumRegex = regexp.MustCompile(`/^!raum($|\s)/i`)
+var bangRaumRegex = regexp.MustCompile(`(?i)^!raum($|\s)`)
 var bangRaumLast = time.Now().Add(time.Second * -10)
 
 func RaumBang(conn *irc.Conn, line *irc.Line) {
