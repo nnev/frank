@@ -24,6 +24,7 @@ const maxItems = 2
 // reference time: Mon Jan 2 15:04:05 -0700 MST 2006
 const timeFormat1 = "Mon, 02 Jan 2006 15:04:05 -0700"
 const timeFormat2 = "2006-01-02T15:04:05Z"
+const timeFormat3 = "2006-01-02T15:04:05-07:00"
 
 var conn *irc.Conn
 
@@ -39,6 +40,7 @@ func Rss(connection *irc.Conn) {
 	go pollFeed("#i3", "i3website", timeFormat2, "http://code.stapelberg.de/git/i3-website/atom/?h=master")
 	go pollFeed("#i3", "i3faq", timeFormat1, "https://faq.i3wm.org/feeds/rss/")
 
+	go pollFeed("#chaos-hd", "nn-web", timeFormat3, "https://www.noname-ev.de/gitcommits.atom")
 	go pollFeed("#chaos-hd", "nn-wiki", timeFormat2, "https://www.noname-ev.de/wiki/index.php?title=Special:RecentChanges&feed=atom")
 	go pollFeed("#chaos-hd", "nn-planet", timeFormat2, "http://blogs.noname-ev.de/atom.xml")
 }
