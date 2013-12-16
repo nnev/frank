@@ -51,9 +51,6 @@ func main() {
 	// react
 	c.HandleFunc("PRIVMSG",
 		func(conn *irc.Conn, line *irc.Line) {
-			//~ tgt := line.Args[0]
-			//~ msg := line.Args[1]
-
 			// ignore eicar, the bot we love to hate.
 			// Also ignore i3-bot.
 			if line.Nick == "eicar" || line.Nick == "i3" {
@@ -68,8 +65,21 @@ func main() {
 			go frank.ItsAlive(conn, line)
 			go frank.Highlight(conn, line)
 
-			//~ log.Printf("      Debug: tgt: %s, msg: %s\n", tgt, msg)
+			if frankconf.Debug {
+				tgt := line.Args[0]
+				msg := line.Args[1]
+				log.Printf("Debug MSG: tgt: %s, msg: %s\n", tgt, msg)
+			}
 		})
+
+	if frankconf.Debug {
+		c.HandleFunc("NOTICE",
+			func(conn *irc.Conn, line *irc.Line) {
+				tgt := line.Args[0]
+				msg := line.Args[1]
+				log.Printf("Debug NOTICE: tgt: %s, msg: %s\n", tgt, msg)
+			})
+	}
 
 	c.HandleFunc("INVITE",
 		func(conn *irc.Conn, line *irc.Line) {

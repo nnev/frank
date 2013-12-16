@@ -2,6 +2,7 @@ package config
 
 const (
 	Production          = false
+	Debug               = true
 	InstaJoinProduction = "#chaos-hd #i3 #noname-ev #test"
 	InstaJoinDebug      = "#test #test2"
 	NickServPass        = ""
