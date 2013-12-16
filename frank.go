@@ -128,7 +128,9 @@ func main() {
 					channel := line.Args[0]
 
 					if strings.Contains(" "+frankconf.OpOkIn+" ", " "+channel+" ") {
-						conn.Privmsg(channel, "Unbelievable "+line.Nick+", you… http://yrden.de/f1.ogg")
+						if strings.ToLower(line.Nick) != "chanserv" {
+							conn.Privmsg(channel, "Unbelievable "+line.Nick+", you… http://yrden.de/f1.ogg")
+						}
 					} else {
 						conn.Mode(channel, "+v-o", conn.Me().Nick, conn.Me().Nick)
 						conn.Privmsg(channel, line.Nick+": SKYNET® Protection activated")
