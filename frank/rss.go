@@ -84,19 +84,22 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 				url = item.Links[0].Href
 			}
 
-			if isRecentUrl(url) {
+			if url != "" && isRecentUrl(url) {
 				continue
 			}
 
-			addRecentUrl(url)
+			if url != "" {
+				addRecentUrl(url)
+				url = " @ " + url
+			}
 
 			author := html.UnescapeString(item.Author.Name)
 			title := html.UnescapeString(item.Title)
 
 			if author == "" {
-				postitems = appendIfMiss(postitems, "::"+feedName+":: "+title+" @ "+url)
+				postitems = appendIfMiss(postitems, "::"+feedName+":: "+title+url)
 			} else {
-				postitems = appendIfMiss(postitems, "::"+feedName+":: "+title+" @ "+url+" (by "+author+")")
+				postitems = appendIfMiss(postitems, "::"+feedName+":: "+title+url+" (by "+author+")")
 			}
 		}
 
