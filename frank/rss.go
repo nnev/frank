@@ -2,6 +2,7 @@ package frank
 
 import (
 	"code.google.com/p/go.net/html"
+	frankconf "github.com/breunigs/frank/config"
 	irc "github.com/fluffle/goirc/client"
 	rss "github.com/jteeuwen/go-pkg-rss"
 	"log"
@@ -48,11 +49,15 @@ func Rss(connection *irc.Conn) {
 func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("MEGA-WTF:pkg:RSS: %v", r)
+			log.Printf("MEGA-WTF:pkg:RSS: %v\n", r)
 			time.Sleep(retryAfter * time.Minute)
 			pollFeed(channel, feedName, timeFormat, uri)
 		}
 	}()
+
+	if frankconf.Debug {
+		log.Printf("RSS %s: Setting up %s to post to %s \n", feedName, uri, channel)
+	}
 
 	// this will process all incoming new feed items and discard all that
 	// are somehow erroneous or older than the threshold. It will directly
@@ -66,18 +71,18 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 			pubdate, err := time.Parse(timeFormat, item.PubDate)
 			// ignore items with unreadable date format
 			if err != nil {
-				log.Printf("RSS: WTF @ reading date for %s: %s (err: %v)", feedName, item.PubDate, err)
+				log.Printf("RSS: WTF @ reading date for %s: %s (err: %v)\n", feedName, item.PubDate, err)
 				continue
 			}
 
 			// ignore items that were posted before frank booted or are older
 			// than “freshness” minutes
 			if ignoreBefore.After(pubdate) {
-				log.Printf("RSS %s: skipping posts made before booting (posted: %s, booted: %s)", feedName, pubdate, ignoreBefore)
+				log.Printf("RSS %s: skipping posts made before booting (posted: %s, booted: %s)\n", feedName, pubdate, ignoreBefore)
 				continue
 			}
 			if time.Since(pubdate) >= freshness*time.Minute {
-				log.Printf("RSS %s: skipping non-fresh post (posted: %s, time_ago: %s)", feedName, pubdate, time.Since(pubdate))
+				log.Printf("RSS %s: skipping non-fresh post (posted: %s, time_ago: %s)\n", feedName, pubdate, time.Since(pubdate))
 				continue
 			}
 
@@ -87,6 +92,9 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 			}
 
 			if url != "" && isRecentUrl(url) {
+				if frankconf.Debug {
+					log.Printf("RSS %s: Skipping item because saved as recent URL (URL: %s)\n", feedName, url)
+				}
 				continue
 			}
 
@@ -123,7 +131,7 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 		// the order in line with how IRC wprks
 		for i := len(postitems) - 1; i >= 0; i -= 1 {
 			conn.Privmsg(channel, postitems[i])
-			log.Printf("RSS-post: %s", postitems[i])
+			log.Printf("RSS %s: posting %s\n", feedName, postitems[i])
 		}
 	}
 
@@ -132,9 +140,12 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 
 	// check for updates infinite loop
 	for {
-		//~ log.Printf("RSS: updating %s", feedName)
+		if frankconf.Debug {
+			log.Printf("RSS %s: Updating\n", feedName)
+		}
+
 		if err := feed.Fetch(uri, nil); err != nil {
-			log.Printf("RSS: [e] %s: %s", uri, err)
+			log.Printf("RSS %s: Error for %s: %s\n", feedName, uri, err)
 			time.Sleep(retryAfter * time.Minute)
 			continue
 		}
@@ -152,6 +163,9 @@ func chanHandler(feed *rss.Feed, newchannels []*rss.Channel) {
 func appendIfMiss(slice []string, s string) []string {
 	for _, elm := range slice {
 		if elm == s {
+			if frankconf.Debug {
+				log.Printf("RSS: Not adding “%s” because it is already present\n", s)
+			}
 			return slice
 		}
 	}
