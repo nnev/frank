@@ -23,7 +23,7 @@ const retryAfter = 9
 const maxItems = 2
 
 // reference time: Mon Jan 2 15:04:05 -0700 MST 2006
-const timeFormat1 = Time.RFC1123Z
+const timeFormat1 = time.RFC1123Z
 const timeFormat2 = "2006-01-02T15:04:05Z"
 const timeFormat3 = "2006-01-02T15:04:05-07:00"
 
@@ -141,7 +141,7 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 	// check for updates infinite loop
 	for {
 		if frankconf.Debug {
-			t := Time.Unix(0, feed.LastUpdate()).Format(Time.RFC3339)
+			t := time.Unix(0, feed.LastUpdate()).Format(time.RFC3339)
 			log.Printf("RSS %s: Updating now (previous update: %s, refresh ok: %s)\n", feedName, t, feed.CanUpdate())
 		}
 
