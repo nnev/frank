@@ -1,0 +1,14 @@
+[Unit]
+Description=frank (irc-bot)
+
+[Service]
+User=nobody
+# ensure the directory, or more specifically the “karma” file inside
+# that directory is writable by User. Usually running
+#   touch karma && chgrp nogroup karma
+# should work fine.
+WorkingDirectory=/opt/frank/
+ExecStart=/opt/frank/frank
+
+[Install]
+WantedBy=multi-user.target
