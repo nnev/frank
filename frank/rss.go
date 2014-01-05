@@ -23,7 +23,7 @@ const retryAfter = 9
 const maxItems = 2
 
 // reference time: Mon Jan 2 15:04:05 -0700 MST 2006
-const timeFormat1 = "Mon, 02 Jan 2006 15:04:05 -0700"
+const timeFormat1 = Time.RFC1123Z
 const timeFormat2 = "2006-01-02T15:04:05Z"
 const timeFormat3 = "2006-01-02T15:04:05-07:00"
 
