@@ -12,7 +12,7 @@ import (
 const INTERVAL_PERIOD time.Duration = 24 * time.Hour
 const HOUR_TO_TICK int = 0
 const MINUTE_TO_TICK int = 0
-const SECOND_TO_TICK int = 0
+const SECOND_TO_TICK int = 1
 
 var regexTomorrow = regexp.MustCompile(`(?i)\smorgen:?\s`)
 var regexToday = regexp.MustCompile(`(?i)\sheute:?\s`)
@@ -67,8 +67,19 @@ func updateTopicText(topic string) string {
 	parts := strings.Split(" "+topic+" ", sep)
 	new := []string{}
 
+	dateToday := time.Now().Format("2006-01-02")
+	dateTomorrow := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+
 	for _, part := range parts {
-		if regexTomorrow.MatchString(part) {
+		if strings.Contains(part, dateToday) {
+			part = strings.Replace(part, dateToday, "HEUTE", -1)
+			new = append(new, part)
+
+		} else if strings.Contains(part, dateTomorrow) {
+			part = strings.Replace(part, dateTomorrow, "MORGEN", -1)
+			new = append(new, part)
+
+		} else if regexTomorrow.MatchString(part) {
 			// tomorrow → today
 			match := regexTomorrow.FindStringSubmatch(part)[0]
 			r := " heute"
@@ -86,6 +97,7 @@ func updateTopicText(topic string) string {
 
 		} else if regexToday.MatchString(part) {
 			// today → (remove)
+
 		} else {
 			// keep
 			new = append(new, part)
