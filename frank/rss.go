@@ -44,6 +44,7 @@ func Rss(connection *irc.Conn) {
 	go pollFeed("#chaos-hd", "nn-web", timeFormat3, "https://www.noname-ev.de/gitcommits.atom")
 	go pollFeed("#chaos-hd", "nn-wiki", timeFormat2, "https://www.noname-ev.de/wiki/index.php?title=Special:RecentChanges&feed=atom")
 	go pollFeed("#chaos-hd", "nn-planet", timeFormat2, "http://blogs.noname-ev.de/atom.xml")
+	go pollFeed("#chaos-hd", "frank", timeFormat3, "https://github.com/breunigs/frank/commits/master.atom")
 }
 
 func pollFeed(channel string, feedName string, timeFormat string, uri string) {
