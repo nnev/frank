@@ -191,6 +191,14 @@ func titleParseHtml(r io.Reader) (string, string) {
 			return
 		}
 
+		if tweetText != "" && hasClass(n, "opened-tweet") {
+			// reset already found tweet text if we encounter a more
+			// “prominent” one
+			tweetText = ""
+			tweetUser = ""
+			tweetPicUrl = ""
+		}
+
 		if tweetText == "" && hasClass(n, "tweet-text") {
 			tweetText = extractText(n)
 			return
@@ -248,7 +256,8 @@ func hasClass(n *html.Node, class string) bool {
 	}
 
 	class = " " + strings.TrimSpace(class) + " "
-	if strings.Contains(" "+getAttr(n, "class")+" ", class) {
+	attr := strings.Replace(getAttr(n, "class"), "\n", " ", -1)
+	if strings.Contains(" "+attr+" ", class) {
 		return true
 	}
 	return false
