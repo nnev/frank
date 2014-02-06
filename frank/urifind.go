@@ -191,7 +191,7 @@ func titleParseHtml(r io.Reader) (string, string) {
 			return
 		}
 
-		if tweetText != "" && hasClass(n, "opened-tweet") {
+		if tweetText != "" && hasClass(n, "permalink-tweet") {
 			// reset already found tweet text if we encounter a more
 			// “prominent” one
 			tweetText = ""
