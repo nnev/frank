@@ -182,6 +182,7 @@ func titleParseHtml(r io.Reader) (string, string) {
 	title := ""
 	tweetText := ""
 	tweetUser := ""
+	tweetUserVerified := ""
 	tweetPicUrl := ""
 
 	var f func(*html.Node)
@@ -209,6 +210,11 @@ func titleParseHtml(r io.Reader) (string, string) {
 			return
 		}
 
+		if tweetUserVerified == "" && hasClass(n, "verified") {
+			tweetUserVerified = extractText(n)
+			return
+		}
+
 		isMedia := hasClass(n, "media") || hasClass(n, "media-thumbnail")
 		if tweetPicUrl == "" && isMedia && !hasClass(n, "profile-picture") {
 			attrVal := getAttr(n, "data-url")
@@ -230,6 +236,7 @@ func titleParseHtml(r io.Reader) (string, string) {
 	tweet := ""
 	if tweetText != "" {
 		tweetText = twitterPicsRegex.ReplaceAllString(tweetText, "")
+		tweetUser = strings.Replace(tweetUser, tweetUserVerified, "", 1)
 		tweetUser = strings.Replace(tweetUser, "@", "(@", 1) + "): "
 		tweet = tweetUser + tweetText + " " + tweetPicUrl
 		tweet = clean(tweet)
