@@ -33,6 +33,8 @@ func TestTitleGet(t *testing.T) {
 	samples["https://twitter.com/Perspective_pic/status/400356645504831489"] = "Perspective Pictures (@Perspective_pic): Sorry but this without a doubt the greatest thing ever seen on an air duct https://pbs.twimg.com/media/BY5aP2RIQAAWPl1.jpg:large"
 	samples["https://twitter.com/quityourjrob/status/405438033853313025/photo/1"] = "Joanna Robinson (@jowrotethis): How to tell if a toy is for boys or girls. https://pbs.twimg.com/media/BaBnvl5CYAAyYzm.jpg:large"
 	samples["https://twitter.com/rechelon/status/431242278221275137"] = "William Gillis (@rechelon): @SebastosPublius @jfsmith23 Yep. Godesky had gathered a large following back then and was more sane than Zerzan & less terrible than Jensen."
+	samples["https://twitter.com/thejeremyvine/status/433607774375649280"] = "Jeremy Vine (@theJeremyVine): The internet was invented so someone could ask this question - and get an answer: https://pbs.twimg.com/media/BgR7-TQCIAAE4fm.jpg:large"
+	samples["http://twitter.com/thejeremyvine/status/433607774375649280"] = "Jeremy Vine (@theJeremyVine): The internet was invented so someone could ask this question - and get an answer: https://pbs.twimg.com/media/BgR7-TQCIAAE4fm.jpg:large"
 
 	for url, title := range samples {
 		x, _, _ := TitleGet(url)
