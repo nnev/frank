@@ -181,7 +181,8 @@ func titleParseHtml(r io.Reader) (string, string) {
 
 	title := ""
 	tweetText := ""
-	tweetUser := ""
+	tweetUserName := ""
+	tweetUserScreenName := ""
 	tweetPicUrl := ""
 
 	var f func(*html.Node)
@@ -191,22 +192,16 @@ func titleParseHtml(r io.Reader) (string, string) {
 			return
 		}
 
-		if tweetText != "" && hasClass(n, "permalink-tweet") {
-			// reset already found tweet text if we encounter a more
-			// “prominent” one
-			tweetText = ""
-			tweetUser = ""
-			tweetPicUrl = ""
-		}
-
-		if tweetText == "" && hasClass(n, "tweet-text") {
-			tweetText = extractText(n)
-			return
-		}
-
-		if tweetUser == "" && hasClass(n, "js-user-profile-link") {
-			tweetUser = extractText(n)
-			return
+		if hasClass(n, "permalink-tweet") {
+			tweetUserName = getAttr(n, "data-name")
+			tweetUserScreenName = getAttr(n, "data-screen-name")
+			// find next child “tweet-text”
+			for c := n.FirstChild; c!=nil; c = c.NextSibling {
+				if hasClass(c, "tweet-text") {
+					tweetText = extractText(c)
+					break
+				}
+			}
 		}
 
 		isMedia := hasClass(n, "media") || hasClass(n, "media-thumbnail")
@@ -228,9 +223,10 @@ func titleParseHtml(r io.Reader) (string, string) {
 
 	// cleanup
 	tweet := ""
+	tweetUser := ""
 	if tweetText != "" {
 		tweetText = twitterPicsRegex.ReplaceAllString(tweetText, "")
-		tweetUser = strings.Replace(tweetUser, "@", "(@", 1) + "): "
+		tweetUser = tweetUserName + " (@" + tweetUserScreenName + "): "
 		tweet = tweetUser + tweetText + " " + tweetPicUrl
 		tweet = clean(tweet)
 	}
