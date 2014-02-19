@@ -3,6 +3,7 @@ package frank
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestExtract(t *testing.T) {
@@ -51,5 +52,43 @@ func TestClean(t *testing.T) {
 
 	if x := clean(" trim "); x != "trim" {
 		t.Errorf("clean does not trim properly (got: %v)", x)
+	}
+}
+
+func TestCache(t *testing.T) {
+	if cc := cacheGetByUrl("fakeurl"); cc != nil {
+		t.Errorf("Empty Cache should return nil pointer")
+	}
+
+	cacheAdd("realurl", "some title")
+
+	if cc := cacheGetByUrl("fakeurl"); cc != nil {
+		t.Errorf("Cache should return nil pointer when URL not cached")
+	}
+
+	cc := cacheGetByUrl("realurl")
+
+	if cc == nil {
+		t.Errorf("Cache should find cached URL")
+	}
+
+	if cc.title != "some title" {
+		t.Errorf("Cache did not return expected title (returned: %#v)", cc)
+	}
+
+	if ago := cacheGetTimeAgo(cc); ago != "0m" {
+		t.Errorf("Cache did not produce expected time ago value. Expected: 0m. Returned: %s", ago)
+	}
+
+	tmp, _ := time.ParseDuration("-1h1m")
+	cc.date = time.Now().Add(tmp)
+	if ago := cacheGetTimeAgo(cc); ago != "1h" {
+		t.Errorf("Cache did not produce expected time ago value. Expected: 1h. Returned: %s", ago)
+	}
+
+	tmp, _ = time.ParseDuration("-1h31m")
+	cc.date = time.Now().Add(tmp)
+	if ago := cacheGetTimeAgo(cc); ago != "2h" {
+		t.Errorf("Cache did not produce expected time ago value. Expected: 2h. Returned: %s", ago)
 	}
 }

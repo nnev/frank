@@ -65,9 +65,10 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			continue
 		}
 
-		if title := cacheGetTitleByUrl(url); title != "" {
-			log.Printf("using cache for URL: %s", url)
-			postTitle(conn, line, title, "Cache Info")
+		if cp := cacheGetByUrl(url); cp != nil {
+			log.Printf("using cache for URL: %s", cp.url)
+			ago := cacheGetTimeAgo(cp)
+			postTitle(conn, line, cp.title, "cached "+ago+" ago")
 			continue
 		}
 
@@ -286,13 +287,23 @@ func cacheAdd(url string, title string) {
 	cacheIndex += 1
 }
 
-func cacheGetTitleByUrl(url string) string {
+func cacheGetByUrl(url string) *Cache {
 	for _, cc := range cache {
 		if cc.url == url && time.Since(cc.date).Hours() <= cacheValidHours {
-			return cc.title
+			return &cc
 		}
 	}
-	return ""
+	return nil
+}
+
+func cacheGetTimeAgo(cc *Cache) string {
+	ago := time.Since(cc.date).Minutes()
+	if ago < 60 {
+		return strconv.Itoa(int(ago)) + "m"
+	} else {
+		hours := strconv.Itoa(int(ago/60.0 + 0.5))
+		return hours + "h"
+	}
 }
 
 func cacheGetSecondsToLastPost(title string) int {
