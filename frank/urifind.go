@@ -7,8 +7,6 @@ import (
 	irc "github.com/fluffle/goirc/client"
 	"io"
 	"log"
-	"net"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -24,10 +22,6 @@ const cacheValidHours = 24
 // how many kilo bytes should be considered when looking for the title
 // tag.
 const httpReadKByte = 100
-
-// abort HTTP requests if it takes longer than X seconds. Not sure, it’s
-// definitely magic involved. Must be larger than 5.
-const httpGetDeadline = 10
 
 // don’t repost the same title within this period
 const noRepostWithinSeconds = 30
@@ -139,20 +133,7 @@ func extract(msg string) []string {
 // http/html stuff /////////////////////////////////////////////////////
 
 func TitleGet(url string) (string, string, error) {
-	// via http://www.reddit.com/r/golang/comments/10awvj/timeout_on_httpget/c6bz49s
-	c := http.Client{
-		Transport: &http.Transport{
-			Dial: func(netw, addr string) (net.Conn, error) {
-				deadline := time.Now().Add(time.Second * httpGetDeadline)
-				c, err := net.DialTimeout(netw, addr, time.Second*(httpGetDeadline-5))
-				if err != nil {
-					return nil, err
-				}
-				c.SetDeadline(deadline)
-				return c, nil
-			},
-		},
-	}
+	c := HttpClientWithTimeout()
 
 	r, err := c.Get(url)
 	if err != nil {
@@ -207,7 +188,7 @@ func titleParseHtml(r io.Reader) (string, string) {
 			tweetUserName = getAttr(n, "data-name")
 			tweetUserScreenName = getAttr(n, "data-screen-name")
 			// find next child “tweet-text”
-			for c := n.FirstChild; c!=nil; c = c.NextSibling {
+			for c := n.FirstChild; c != nil; c = c.NextSibling {
 				if hasClass(c, "tweet-text") {
 					tweetText = extractText(c)
 					break

@@ -31,6 +31,8 @@ var conn *irc.Conn
 
 var ignoreBefore = time.Now()
 
+var rssHttpClient = HttpClientWithTimeout()
+
 func Rss(connection *irc.Conn) {
 	conn = connection
 	// this feels wrong, the missing alignment making it hard to read.
@@ -146,7 +148,7 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 			log.Printf("RSS %s: Updating now (previous update: %s, refresh ok: %s)\n", feedName, t, feed.CanUpdate())
 		}
 
-		if err := feed.Fetch(uri, nil); err != nil {
+		if err := feed.FetchClient(uri, &rssHttpClient, nil); err != nil {
 			log.Printf("RSS %s: Error for %s: %s\n", feedName, uri, err)
 			time.Sleep(retryAfter * time.Minute)
 			continue
