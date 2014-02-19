@@ -15,7 +15,7 @@ import (
 )
 
 // how many URLs can the cache store
-const cacheSize = 100
+const cacheSize = 500
 
 // how many hours an entry should be considered valid
 const cacheValidHours = 24
@@ -64,6 +64,13 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			log.Printf("using cache for URL: %s", cp.url)
 			ago := cacheGetTimeAgo(cp)
 			postTitle(conn, line, cp.title, "cached "+ago+" ago")
+			// Hack: add title to the cache again so we can correctly check
+			// for reposts, even if the original link has been cached quite
+			// some time ago. Since the repost check searches by title, but
+			// here we search by URL wie get the correct time when it was
+			// cached while still preventing people from using frank to
+			// multiply their spamming.
+			cacheAdd("", cp.title)
 			continue
 		}
 
