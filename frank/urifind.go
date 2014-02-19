@@ -109,10 +109,20 @@ func extract(msg string) []string {
 			url = url[:end]
 		}
 
-		// End on closing paren, but only if there is an opening
-		// paren before the URL (should fix most false-positives).
-		if end := strings.Index(url, ")"); idx > 0 && msg[idx-1] == '(' && end > -1 {
-			url = url[:end]
+		// use special handling if the URL contains closing parens
+		closingParen := strings.Index(url, ")")
+		if closingParen > -1 {
+			absPos := idx + closingParen + 1
+			if len(msg) > absPos && msg[absPos] == ')' {
+				// if an URL ends with double closing parens, assume that the
+				// former one belongs to the URL
+				url = url[:closingParen+1]
+			} else if idx > 0 && msg[idx-1] == '(' {
+				// if it ends on a single closing parens (follow by other chars)
+				// only remove that closing parens if the URL is directly
+				// preceded by one
+				url = url[:closingParen]
+			}
 		}
 
 		// Whitespace always ends a URL.

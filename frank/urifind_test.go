@@ -15,6 +15,8 @@ func TestExtract(t *testing.T) {
 	msgs["http://http://foo.de, letztens gefunden."] = []string{"http://http://foo.de"}
 	msgs["http://http://foo.de letztens gefunden"] = []string{"http://http://foo.de"}
 	msgs["sECuRE: failed Dein Algo nicht auf https://maps.google.de/maps?q=Frankfurt+(Oder)&hl=de ?"] = []string{"https://maps.google.de/maps?q=Frankfurt+(Oder)&hl=de"}
+	msgs["(nested parens http://en.wikipedia.org/wiki/Heuristic_(engineering))"] = []string{"http://en.wikipedia.org/wiki/Heuristic_(engineering)"}
+	msgs["enclosed by parens: (http://en.wikipedia.org/wiki/Heuristic_(engineering))"] = []string{"http://en.wikipedia.org/wiki/Heuristic_(engineering)"}
 
 	for from, to := range msgs {
 		x := fmt.Sprintf("%v", extract(from))
