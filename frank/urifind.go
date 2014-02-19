@@ -4,6 +4,7 @@ import (
 	"code.google.com/p/go.net/html"
 	"code.google.com/p/go.net/html/atom"
 	"errors"
+	frankconf "github.com/breunigs/frank/config"
 	irc "github.com/fluffle/goirc/client"
 	"io"
 	"log"
@@ -317,6 +318,10 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 	if secondsAgo <= noRepostWithinSeconds {
 		log.Printf("Skipping, because posted %d seconds ago (“%s”)", secondsAgo, title)
 		return
+	}
+
+	if frankconf.Debug {
+		log.Printf("Title was last posted: %#v (“%s”)", secondsAgo, title)
 	}
 
 	log.Printf("nick=%s, target=%s, title=%s", line.Nick, tgt, title)

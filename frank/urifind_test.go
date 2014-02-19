@@ -93,4 +93,10 @@ func TestCache(t *testing.T) {
 	if ago := cacheGetTimeAgo(cc); ago != "2h" {
 		t.Errorf("Cache did not produce expected time ago value. Expected: 2h. Returned: %s", ago)
 	}
+
+	cacheAdd("secondsAgoTestUrl", "another title")
+	time.Sleep(time.Second)
+	if secs := cacheGetSecondsToLastPost("another title"); secs != 1 {
+		t.Errorf("Cache did not calculate correct amount of seconds since post. Got: %s, Expected: 1s", secs)
+	}
 }
