@@ -10,7 +10,7 @@ import (
 const googUrl = "http://googl.com/search?btnI=1&q="
 
 // regex that matches lmgtfy requests
-var lmgtfyMatcher = regexp.MustCompile(`^(?:[\d\pL._-]+: )?lmgtfy: (.+)`)
+var lmgtfyMatcher = regexp.MustCompile(`^(?:[\d\pL._-]+: )?lmgtfy (.+)`)
 
 func Lmgtfy(conn *irc.Conn, line *irc.Line) {
 	tgt := line.Args[0]
