@@ -23,9 +23,7 @@ func Lmgtfy(conn *irc.Conn, line *irc.Line) {
 
 	post := extractPost(msg)
 
-	if post == "" {
-		return
-	} else {
+	if post != "" {
 		conn.Privmsg(tgt, post)
 	}
 }
