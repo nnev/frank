@@ -10,7 +10,7 @@ import (
 const googUrl = "http://googl.com/search?btnI=1&q="
 
 // regex that matches lmgtfy requests
-var lmgtfyMatcher = regexp.MustCompile(`^(?:[\d\pL._-]+: )?lmgtfy: (.+)`)
+var lmgtfyMatcher = regexp.MustCompile(`^(?:[\d\pL._-]+: )?lmgtfy:? (.+)`)
 
 func Lmgtfy(conn *irc.Conn, line *irc.Line) {
 	tgt := line.Args[0]
@@ -21,23 +21,38 @@ func Lmgtfy(conn *irc.Conn, line *irc.Line) {
 		return
 	}
 
-	if !lmgtfyMatcher.MatchString(msg) {
+	post := extractPost(msg)
+
+	if post == "" {
 		return
+	} else {
+		conn.Privmsg(tgt, post)
+	}
+}
+
+// returns the String to be posted
+func extractPost(msg string) string {
+	if !lmgtfyMatcher.MatchString(msg) {
+		return ""
 	}
 
 	match := lmgtfyMatcher.FindStringSubmatch(msg)
 
 	if len(match) < 2 {
 		log.Printf("WTF: lmgtfy regex match didn’t have enough parts")
-		return
+		return ""
 	}
 
 	u := googUrl + url.QueryEscape(match[1])
 	t, lastUrl, err := TitleGet(u)
 
+	post := ""
+
 	if err != nil {
-		conn.Privmsg(tgt, "[LMGTFY] "+lastUrl)
+		post = "[LMGTFY] " + lastUrl
 	} else {
-		conn.Privmsg(tgt, "[LMGTFY] "+t+" @ "+lastUrl)
+		post = "[LMGTFY] " + t + " @ " + lastUrl
 	}
+
+	return post
 }
