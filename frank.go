@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"flag"
 	frankconf "github.com/breunigs/frank/config"
 	"github.com/breunigs/frank/frank"
@@ -14,6 +15,7 @@ func main() {
 
 	cfg := irc.NewConfig(frankconf.BotNick, frankconf.BotNick, "Frank Böterrich der Zweite")
 	cfg.SSL = true
+	cfg.SSLConfig = &tls.Config{InsecureSkipVerify: true}
 	cfg.Flood = true
 	cfg.Server = frankconf.IrcServer
 	cfg.NewNick = func(n string) string { return n + "_" }
