@@ -11,4 +11,6 @@ const (
 	Master              = "xeen"
 	OpOkIn              = "#test #test2 #chaos-hd"
 	TopicChanger        = "#test2 #chaos-hd"
+	SqlDriver           = "postgres"
+	SqlConnect          = "dbname=nnev user=anon host=/var/run/postgresql sslmode=disable"
 )

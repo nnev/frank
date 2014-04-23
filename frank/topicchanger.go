@@ -3,6 +3,8 @@ package frank
 import (
 	frankconf "github.com/breunigs/frank/config"
 	irc "github.com/fluffle/goirc/client"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"log"
 	"regexp"
 	"strings"
@@ -13,6 +15,10 @@ const INTERVAL_PERIOD time.Duration = 24 * time.Hour
 const HOUR_TO_TICK int = 0
 const MINUTE_TO_TICK int = 0
 const SECOND_TO_TICK int = 1
+const SEPARATOR = "|"
+
+// I would prefer 🕖, but it’s not available in most fonts
+const ROBOT_BLOCK_IDENTIFIER = "ꜰ"
 
 var regexTomorrow = regexp.MustCompile(`(?i)\smorgen:?\s`)
 var regexToday = regexp.MustCompile(`(?i)\sheute:?\s`)
@@ -49,7 +55,8 @@ func setTopic(conn *irc.Conn, channel string) {
 	}()
 
 	topic := conn.StateTracker().GetChannel(channel).Topic
-	newtopic := updateTopicText(topic)
+	newtopic := insertNextEvent(topic)
+	newtopic = advanceDates(newtopic)
 
 	if topic == newtopic {
 		return
@@ -61,10 +68,8 @@ func setTopic(conn *irc.Conn, channel string) {
 	conn.Topic(channel, newtopic)
 }
 
-func updateTopicText(topic string) string {
-	sep := "|"
-
-	parts := strings.Split(" "+topic+" ", sep)
+func advanceDates(topic string) string {
+	parts := splitTopic(topic)
 	new := []string{}
 
 	dateToday := time.Now().Format("2006-01-02")
@@ -103,5 +108,111 @@ func updateTopicText(topic string) string {
 			new = append(new, part)
 		}
 	}
-	return strings.TrimSpace(strings.Join(new, sep))
+	return joinTopic(new)
+}
+
+func insertNextEvent(topic string) string {
+	event := " " + ROBOT_BLOCK_IDENTIFIER + " " + getNextEventString() + " "
+
+	parts := splitTopic(topic)
+
+	eventIdx := -1
+	for i, part := range parts {
+		if strings.Contains(part, ROBOT_BLOCK_IDENTIFIER) {
+			eventIdx = i
+			break
+		}
+	}
+
+	if eventIdx < 0 {
+		parts = append(parts, event)
+	} else {
+		parts[eventIdx] = event
+	}
+
+	return joinTopic(parts)
+}
+
+func splitTopic(topic string) []string {
+	return strings.Split(" "+topic+" ", SEPARATOR)
+}
+
+func joinTopic(parts []string) string {
+	return strings.TrimSpace(strings.Join(parts, SEPARATOR))
+}
+
+// stores all required data for the next event to accurately
+// describe it everyone who listens.
+type event struct {
+	Stammtisch bool
+	Override   string
+	Location   string
+	Date       time.Time
+	Topic      string
+}
+
+// retrieves the next event from the database and parses it into
+// an “event”. Returns nil if the DB connection or query fails.
+// Function is defined in this way so it may easily be overwritten
+// when testing.
+var getNextEvent = func() *event {
+	db, err := sqlx.Connect(frankconf.SqlDriver, frankconf.SqlConnect)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	defer db.Close()
+
+	evt := event{}
+	err = db.Get(&evt, `
+		SELECT stammtisch, override, location, termine.date, topic
+		FROM termine
+		LEFT JOIN vortraege
+		ON termine.date = vortraege.date
+		WHERE termine.date > now()
+		ORDER BY termine.date ASC
+		LIMIT 1`)
+
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+
+	return &evt
+}
+
+// converts an event (retrieved from the database) into a condensed
+// single string in human readable form
+func getNextEventString() string {
+	evt := getNextEvent()
+	if evt == nil {
+		return "SQL Error, see logs"
+	}
+
+	t := evt.Date.Format("2006-01-02") + ": "
+
+	if evt.Override != "" {
+		t += "Ausnahmsweise: " + evt.Override
+
+	} else if evt.Stammtisch {
+		t += "Stammtisch @ " + strOrDefault(evt.Location, "TBA")
+		t += " https://www.noname-ev.de/yarpnarp.html"
+		t += " bitte zu/absagen"
+
+	} else {
+		t += "c¼h: " + strOrDefault(evt.Topic, "noch keine ◉︵◉")
+	}
+
+	return strings.TrimSpace(t)
+}
+
+// returns the first argument “str”, unless it is empty. If so,
+// it will instead return the second argument “def”.
+func strOrDefault(str string, def string) string {
+	if str == "" {
+		return def
+	} else {
+		return str
+	}
 }
