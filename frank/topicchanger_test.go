@@ -1,6 +1,7 @@
 package frank
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 )
@@ -44,28 +45,28 @@ func TestInsertNextEvent(t *testing.T) {
 	date := time.Date(2014, 4, 23, 18, 12, 0, 0, time.UTC)
 	evtTreff := event{
 		Stammtisch: false,
-		Override:   "",
-		Location:   "",
+		Override:   toNullString(""),
+		Location:   toNullString(""),
 		Date:       date,
-		Topic:      "Testing",
+		Topic:      toNullString("Testing"),
 	}
 	strTreff := ROBOT_BLOCK_IDENTIFIER + " 2014-04-23: c¼h: Testing"
 
 	evtStammtisch := event{
 		Stammtisch: true,
-		Override:   "",
-		Location:   "Mr. Woot",
+		Override:   toNullString(""),
+		Location:   toNullString("Mr. Woot"),
 		Date:       date,
-		Topic:      "",
+		Topic:      toNullString(""),
 	}
 	strStammtisch := ROBOT_BLOCK_IDENTIFIER + " 2014-04-23: Stammtisch @ Mr. Woot https://www.noname-ev.de/yarpnarp.html bitte zu/absagen"
 
 	evtSpecial := event{
 		Stammtisch: false,
-		Override:   "RGB2R",
-		Location:   "",
+		Override:   toNullString("RGB2R"),
+		Location:   toNullString(""),
 		Date:       date,
-		Topic:      "",
+		Topic:      toNullString(""),
 	}
 	strSpecial := ROBOT_BLOCK_IDENTIFIER + " 2014-04-23: Ausnahmsweise: RGB2R"
 
@@ -96,4 +97,8 @@ func TestInsertNextEvent(t *testing.T) {
 			}
 		}
 	}
+}
+
+func toNullString(s string) sql.NullString {
+	return sql.NullString{Valid: true, String: s}
 }

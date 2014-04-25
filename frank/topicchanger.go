@@ -1,6 +1,7 @@
 package frank
 
 import (
+	"database/sql"
 	frankconf "github.com/breunigs/frank/config"
 	irc "github.com/fluffle/goirc/client"
 	"github.com/jmoiron/sqlx"
@@ -145,10 +146,10 @@ func joinTopic(parts []string) string {
 // describe it everyone who listens.
 type event struct {
 	Stammtisch bool
-	Override   string
-	Location   string
+	Override   sql.NullString
+	Location   sql.NullString
 	Date       time.Time
-	Topic      string
+	Topic      sql.NullString
 }
 
 // retrieves the next event from the database and parses it into
@@ -192,16 +193,16 @@ func getNextEventString() string {
 
 	t := evt.Date.Format("2006-01-02") + ": "
 
-	if evt.Override != "" {
-		t += "Ausnahmsweise: " + evt.Override
+	if toStr(evt.Override) != "" {
+		t += "Ausnahmsweise: " + toStr(evt.Override)
 
 	} else if evt.Stammtisch {
-		t += "Stammtisch @ " + strOrDefault(evt.Location, "TBA")
+		t += "Stammtisch @ " + strOrDefault(toStr(evt.Location), "TBA")
 		t += " https://www.noname-ev.de/yarpnarp.html"
 		t += " bitte zu/absagen"
 
 	} else {
-		t += "c¼h: " + strOrDefault(evt.Topic, "noch keine ◉︵◉")
+		t += "c¼h: " + strOrDefault(toStr(evt.Topic), "noch keine ◉︵◉")
 	}
 
 	return strings.TrimSpace(t)
@@ -214,5 +215,13 @@ func strOrDefault(str string, def string) string {
 		return def
 	} else {
 		return str
+	}
+}
+
+func toStr(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	} else {
+		return ""
 	}
 }
