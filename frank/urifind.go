@@ -41,7 +41,24 @@ var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9
 var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) spoiler`)
 
 // blacklist pointless titles /////////////////////////////////////////
-var pointlessTitles = []string{"", "imgur: the simple image sharer"}
+var pointlessTitles = []string{"",
+	"imgur: the simple image sharer",
+	"Fefes Blog",
+	"Gmane Loom",
+	"i3 - A better tiling and dynamic window manager",
+	"i3 - improved tiling wm",
+	"IT-News, c't, iX, Technology Review, Telepolis | heise online",
+	"debian Pastezone",
+	"Index of /docs/",
+	"NoName e.V. pastebin",
+	"Nopaste - powered by project-mindstorm IT Services",
+	"Diff NoName e.V. pastebin",
+	"",
+	"",
+	"",
+	"",
+	"Google"
+}
 
 func isIn(needle string, haystack []string) bool {
 	for _, s := range haystack {
