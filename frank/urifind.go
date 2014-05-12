@@ -40,6 +40,32 @@ var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9
 
 var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) spoiler`)
 
+// blacklisting of pointless titles ////////////////////////////////////
+type Set map[string]struct{}
+
+// create a set including helperfunctions
+func newSet(init ...string) Set {
+	s := make(Set)
+	for _, str := range init {
+		s.Add(str)
+	}
+	return s
+}
+
+func (s Set) add(element string) {
+	s[element] = struct{}{}
+}
+
+// check for stuff being in it
+func (s Set) has(element string) bool {
+	_, ok := s[element]
+	return ok
+}
+
+// Set of strings that shall not be posted as titles
+var pointlessTitles := NewSet("",
+							"imgur: the simple image sharer")
+
 func UriFind(conn *irc.Conn, line *irc.Line) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -85,7 +111,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			title, _, err := TitleGet(url)
 			if err != nil {
 				//postTitle(conn, line, err.Error(), "Error")
-			} else if title != "" {
+			} else if !pointlessTitles.has(title) {
 				postTitle(conn, line, title, "")
 				cacheAdd(url, title)
 			}
