@@ -53,12 +53,7 @@ var pointlessTitles = []string{"",
 	"NoName e.V. pastebin",
 	"Nopaste - powered by project-mindstorm IT Services",
 	"Diff NoName e.V. pastebin",
-	"",
-	"",
-	"",
-	"",
-	"Google"
-}
+	"Google" }
 
 func isIn(needle string, haystack []string) bool {
 	for _, s := range haystack {
