@@ -40,6 +40,18 @@ var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9
 
 var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) spoiler`)
 
+// blacklist pointless titles /////////////////////////////////////////
+var pointlessTitles = []string{"", "imgur: the simple image sharer"}
+
+func isIn(needle string, haystack []string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
+
 func UriFind(conn *irc.Conn, line *irc.Line) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -85,7 +97,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			title, _, err := TitleGet(url)
 			if err != nil {
 				//postTitle(conn, line, err.Error(), "Error")
-			} else if title != "" {
+			} else if !isIn(title, pointlessTitles) {
 				postTitle(conn, line, title, "")
 				cacheAdd(url, title)
 			}
