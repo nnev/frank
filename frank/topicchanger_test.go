@@ -18,14 +18,16 @@ func TestAdvanceDates(t *testing.T) {
 
 	dateYesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 	dateToday := time.Now().Format("2006-01-02")
+	insertToday := time.Now().Format("02.Jan")
 	dateTomorrow := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	insertTomorrow := time.Now().AddDate(0, 0, 1).Format("02.Jan")
 	dateDayAfterTomorrow := time.Now().AddDate(0, 0, 2).Format("2006-01-02")
 
-	topics[dateToday+": derp"] = "HEUTE: derp"
-	topics[dateToday+" derp"] = "HEUTE derp"
+	topics[dateToday+": derp"] = "HEUTE ("+insertToday+"): derp"
+	topics[dateToday+" derp"] = "HEUTE ("+insertToday+") derp"
 	topics[dateYesterday] = dateYesterday
 	topics[dateDayAfterTomorrow+" | derp"] = dateDayAfterTomorrow + " | derp"
-	topics[dateTomorrow+" | derp"] = "MORGEN | derp"
+	topics[dateTomorrow+" | derp"] = "MORGEN ("+insertTomorrow+") | derp"
 
 	for from, to := range topics {
 		if x := advanceDates(from); x != to {
