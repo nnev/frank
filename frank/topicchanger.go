@@ -73,16 +73,16 @@ func advanceDates(topic string) string {
 	parts := splitTopic(topic)
 	new := []string{}
 
-	dateToday := time.Now().Format("2006-01-02")
-	dateTomorrow := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	dateToday := time.Now()
+	dateTomorrow := time.Now().AddDate(0, 0, 1)
 
 	for _, part := range parts {
-		if strings.Contains(part, dateToday) {
-			part = strings.Replace(part, dateToday, "HEUTE", -1)
+		if strings.Contains(part, dateToday.Format("2006-01-02")) {
+			part = strings.Replace(part, dateToday.Format("2006-01-02"), "HEUTE ("+dateToday.Format("02.Jan")+")", -1)
 			new = append(new, part)
 
-		} else if strings.Contains(part, dateTomorrow) {
-			part = strings.Replace(part, dateTomorrow, "MORGEN", -1)
+		} else if strings.Contains(part, dateTomorrow.Format("2006-01-02")) {
+			part = strings.Replace(part, dateTomorrow.Format("2006-01-02"), "MORGEN ("+dateTomorrow.Format("02.Jan")+")", -1)
 			new = append(new, part)
 
 		} else if regexTomorrow.MatchString(part) {
