@@ -3,15 +3,44 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"log"
+	"os"
+	"strings"
+
 	frankconf "github.com/breunigs/frank/config"
 	"github.com/breunigs/frank/frank"
 	irc "github.com/fluffle/goirc/client"
-	"log"
-	"strings"
+	"github.com/fluffle/goirc/logging"
 )
+
+// goirc does not use the stdlibs log-interface for some reason, so we wrap it
+type ircLogger struct {
+	*log.Logger
+}
+
+func (l ircLogger) Debug(format string, args ...interface{}) {
+	if frankconf.Production {
+		return
+	}
+	l.Printf("[DEBUG] "+format, args...)
+}
+
+func (l ircLogger) Error(format string, args ...interface{}) {
+	l.Printf("[ERROR] "+format, args...)
+}
+
+func (l ircLogger) Info(format string, args ...interface{}) {
+	l.Printf("[INFO] "+format, args...)
+}
+
+func (l ircLogger) Warn(format string, args ...interface{}) {
+	l.Printf("[WARN] "+format, args...)
+}
 
 func main() {
 	flag.Parse() // parses the logging flags. TODO
+
+	logging.SetLogger(ircLogger{log.New(os.Stdout, "[irc]", log.LstdFlags)})
 
 	cfg := irc.NewConfig(frankconf.BotNick, frankconf.BotNick, "Frank Böterrich der Zweite")
 	cfg.SSL = true
