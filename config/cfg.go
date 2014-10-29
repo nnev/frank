@@ -1,7 +1,7 @@
 package config
 
 const (
-	Production          = true
+	Production          = false
 	Verbose             = true
 	InstaJoinProduction = "#chaos-hd #i3 #noname-ev #test"
 	InstaJoinTesting    = "#test #test2"
