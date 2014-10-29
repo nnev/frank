@@ -19,7 +19,7 @@ type ircLogger struct {
 }
 
 func (l ircLogger) Debug(format string, args ...interface{}) {
-	if frankconf.Production {
+	if frankconf.Verbose {
 		return
 	}
 	l.Printf("[DEBUG] "+format, args...)
@@ -61,7 +61,7 @@ func main() {
 			if frankconf.Production {
 				instaJoin = frankconf.InstaJoinProduction
 			} else {
-				instaJoin = frankconf.InstaJoinDebug
+				instaJoin = frankconf.InstaJoinTesting
 			}
 
 			log.Printf("AutoJoining: %s\n", instaJoin)
@@ -95,15 +95,9 @@ func main() {
 			go frank.Help(conn, line)
 			go frank.ItsAlive(conn, line)
 			go frank.Highlight(conn, line)
-
-			if frankconf.Debug {
-				tgt := line.Args[0]
-				msg := line.Args[1]
-				log.Printf("Debug MSG: tgt: %s, msg: %s\n", tgt, msg)
-			}
 		})
 
-	if frankconf.Debug {
+	if frankconf.Verbose {
 		c.HandleFunc("NOTICE",
 			func(conn *irc.Conn, line *irc.Line) {
 				tgt := line.Args[0]
@@ -117,7 +111,7 @@ func main() {
 			tgt := line.Args[0]
 			cnnl := line.Args[1]
 
-			// auto follow invites only in debug mode or if asked by master
+			// auto follow invites only in test mode or if asked by master
 			if frankconf.Production && line.Nick != frankconf.Master {
 				log.Printf("only following invites by %s in production\n", frankconf.Master)
 				return

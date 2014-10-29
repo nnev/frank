@@ -1,10 +1,10 @@
 package config
 
 const (
-	Production          = false
-	Debug               = true
+	Production          = true
+	Verbose             = true
 	InstaJoinProduction = "#chaos-hd #i3 #noname-ev #test"
-	InstaJoinDebug      = "#test #test2"
+	InstaJoinTesting    = "#test #test2"
 	NickServPass        = ""
 	IrcServer           = "irc.twice-irc.de"
 	BotNick             = "frank"

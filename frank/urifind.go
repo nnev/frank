@@ -54,7 +54,7 @@ var pointlessTitles = []string{"",
 	"Nopaste - powered by project-mindstorm IT Services",
 	"Diff NoName e.V. pastebin",
 	"pr0gramm.com",
-	"Google" }
+	"Google"}
 
 func isIn(needle string, haystack []string) bool {
 	for _, s := range haystack {
@@ -353,7 +353,7 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 		return
 	}
 
-	if frankconf.Debug {
+	if frankconf.Verbose {
 		log.Printf("Title was last posted: %#v (“%s”)", secondsAgo, title)
 	}
 

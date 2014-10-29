@@ -58,7 +58,7 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 		}
 	}()
 
-	if frankconf.Debug {
+	if frankconf.Verbose {
 		log.Printf("RSS %s: Setting up %s to post to %s \n", feedName, uri, channel)
 	}
 
@@ -95,7 +95,7 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 			}
 
 			if url != "" && isRecentUrl(url) {
-				if frankconf.Debug {
+				if frankconf.Verbose {
 					log.Printf("RSS %s: Skipping item because saved as recent URL (URL: %s)\n", feedName, url)
 				}
 				continue
@@ -143,7 +143,7 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 
 	// check for updates infinite loop
 	for {
-		if frankconf.Debug {
+		if frankconf.Verbose {
 			t := time.Unix(0, feed.LastUpdate()).Format(time.RFC3339)
 			log.Printf("RSS %s: Updating now (previous update: %s, refresh ok: %s)\n", feedName, t, feed.CanUpdate())
 		}
@@ -167,7 +167,7 @@ func chanHandler(feed *rss.Feed, newchannels []*rss.Channel) {
 func appendIfMiss(slice []string, s string) []string {
 	for _, elm := range slice {
 		if elm == s {
-			if frankconf.Debug {
+			if frankconf.Verbose {
 				log.Printf("RSS: Not adding “%s” because it is already present\n", s)
 			}
 			return slice
