@@ -5,8 +5,4 @@ go:
 
 before_install:
   - "export GOPATH=$HOME/gopath"
-  - "go get github.com/fluffle/goirc"
-  - "cd $HOME/gopath/src/github.com/fluffle/goirc"
-  - "git branch"
-  - "git checkout master"
   - "cd $TRAVIS_BUILD_DIR"
