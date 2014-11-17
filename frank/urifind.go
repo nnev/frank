@@ -2,11 +2,11 @@ package frank
 
 import (
 	"code.google.com/p/go.net/html"
-	"code.google.com/p/go.net/html/atom"
 	_ "crypto/sha512"
 	"errors"
 	frankconf "github.com/breunigs/frank/config"
 	irc "github.com/fluffle/goirc/client"
+	"golang.org/x/net/html/atom"
 	"io"
 	"log"
 	"regexp"
