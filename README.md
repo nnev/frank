@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/breunigs/frank.svg?branch=master)](https://travis-ci.org/breunigs/frank)
+
 ### Intro
 
 While it’s possible to install this go package using the common way it likely won’t work: The configuration is hard coded as constants, so you most likely simply want to check out the repository, modify and run `go install` to get your binary of choice.
