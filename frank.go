@@ -174,8 +174,7 @@ func main() {
 
 	// go go GO!
 	if err := c.Connect(); err != nil {
-		log.Printf("Connection error: %s\n", err)
-		os.Exit(1)
+		log.Fatalf("Connection error: %s\n", err)
 	}
 
 	log.Printf("Frank has booted\n")
