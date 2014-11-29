@@ -144,7 +144,7 @@ func pollFeed(channel string, feedName string, timeFormat string, uri string) {
 	// check for updates infinite loop
 	for {
 		if frankconf.Verbose {
-			t := time.Unix(0, feed.LastUpdate()).Format(time.RFC3339)
+			t := feed.LastUpdate().Format(time.RFC3339)
 			log.Printf("RSS %s: Updating now (previous update: %s, refresh ok: %s)\n", feedName, t, feed.CanUpdate())
 		}
 
