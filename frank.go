@@ -9,8 +9,24 @@ import (
 
 	frankconf "github.com/breunigs/frank/config"
 	"github.com/breunigs/frank/frank"
-	irc "github.com/fluffle/goirc/client"
-	"github.com/fluffle/goirc/logging"
+	// irc "github.com/fluffle/goirc/client"
+	// "github.com/fluffle/goirc/logging"
+	"github.com/robustirc/bridge/robustsession"
+)
+
+var (
+	network = flag.String("network",
+		"",
+		`DNS name to connect to (e.g. "robustirc.net"). The _robustirc._tcp SRV record must be present.`)
+	nick = flag.String("nick",
+		"frank",
+		"nickname of the bot")
+	masters = flag.String("masters",
+		"xeen",
+		"space-separated list of users who can control the bot")
+	tlsCAFile = flag.String("tls_ca_file",
+		"",
+		"Use the specified file as trusted CA instead of the system CAs. Useful for testing.")
 )
 
 // goirc does not use the stdlibs log-interface for some reason, so we wrap it
