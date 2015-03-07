@@ -21,7 +21,8 @@ func listenersRun(parsed parser.Message) {
 		}
 
 		go func(idx int, listener Listener) {
-			if !listener(parsed) {
+			keep := listener(parsed)
+			if !keep {
 				log.Printf("Removing Listener %d: %v", idx, listener)
 				listeners[idx] = nil
 			}

@@ -92,6 +92,10 @@ func Post(msg string) {
 	}
 }
 
+func Privmsg(user string, msg string) {
+	Post("PRIVMSG " + user + " :" + msg)
+}
+
 func Join(channel string) {
 	channel = strings.TrimSpace(channel)
 	channel = strings.TrimPrefix(channel, "#")
@@ -101,8 +105,18 @@ func Join(channel string) {
 	}
 
 	log.Printf("joining #%s", channel)
-	Post("PRIVMSG chanserv :invite #" + channel)
+	if *nickserv_password != "" {
+		Privmsg("chanserv", "invite #"+channel)
+	}
 	Post("JOIN #" + channel)
+}
+
+func Nick(p parser.Message) string {
+	return strings.SplitN(p.Prefix(), "!", 2)[0]
+}
+
+func Target(p parser.Message) string {
+	return p.Params()[0]
 }
 
 func boot() {
@@ -111,13 +125,8 @@ func boot() {
 
 	nickserv := make(chan bool)
 	if *nickserv_password != "" {
-		go func() {
-			time.Sleep(10 * time.Second)
-			nickserv <- false
-		}()
-
 		ListenerAdd(func(parsed parser.Message) bool {
-			from_nickserv := strings.HasPrefix(strings.ToLower(parsed.Prefix()), "nickserv!")
+			from_nickserv := strings.ToLower(Nick(parsed)) == "nickserv"
 
 			if parsed.Command() == "NOTICE" && from_nickserv {
 				nickserv <- true
@@ -128,13 +137,18 @@ func boot() {
 		})
 
 		log.Printf("Authenticating with NickServ")
-		Post("PRIVMSG nickserv :identify " + *nickserv_password)
+		Privmsg("nickserv", "identify "+*nickserv_password)
 	} else {
 		nickserv <- false
 	}
 
 	go func() {
-		<-nickserv
+		select {
+		case <-nickserv:
+		case <-time.After(10 * time.Second):
+			log.Printf("No response from nickserv, joining channels anyway")
+		}
+
 		for _, channel := range strings.Split(*channels, " ") {
 			Join(channel)
 		}
@@ -156,6 +170,8 @@ func main() {
 			return true
 		})
 	}
+
+	ListenerAdd(listenerHelp)
 
 	for {
 		msg := <-session.Messages
