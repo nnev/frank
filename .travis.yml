@@ -6,3 +6,5 @@ go:
 before_install:
   - "export GOPATH=$HOME/gopath"
   - "cd $TRAVIS_BUILD_DIR"
+
+sudo: false
