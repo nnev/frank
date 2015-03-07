@@ -1,200 +1,176 @@
 package main
 
 import (
-	"crypto/tls"
 	"flag"
+	"fmt"
+	parser "github.com/husio/go-irc"
+	"github.com/robustirc/bridge/robustsession"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
-
-	frankconf "github.com/breunigs/frank/config"
-	"github.com/breunigs/frank/frank"
-	// irc "github.com/fluffle/goirc/client"
-	// "github.com/fluffle/goirc/logging"
-	"github.com/robustirc/bridge/robustsession"
+	"syscall"
+	"time"
 )
 
 var (
-	network = flag.String("network",
-		"",
-		`DNS name to connect to (e.g. "robustirc.net"). The _robustirc._tcp SRV record must be present.`)
-	nick = flag.String("nick",
-		"frank",
-		"nickname of the bot")
-	masters = flag.String("masters",
-		"xeen",
-		"space-separated list of users who can control the bot")
-	tlsCAFile = flag.String("tls_ca_file",
-		"",
-		"Use the specified file as trusted CA instead of the system CAs. Useful for testing.")
+	network   = flag.String("network", "", `DNS name to connect to (e.g. "robustirc.net"). The _robustirc._tcp SRV record must be present.`)
+	tlsCAFile = flag.String("tls_ca_file", "", "Use the specified file as trusted CA instead of the system CAs. Useful for testing.")
+
+	channels          = flag.String("channels", "", "channels the bot should join. Space separated.")
+	nick              = flag.String("nick", "frank", "nickname of the bot")
+	masters           = flag.String("masters", "xeen", "users who can control the bot. Space separated.")
+	nickserv_password = flag.String("nickserv_password", "", "password used to identify with nickserv. No action is taken if password is blank or not set.")
+
+	verbose = flag.Bool("verbose", false, "enable to get very detailed logs")
 )
 
-// goirc does not use the stdlibs log-interface for some reason, so we wrap it
-type ircLogger struct {
-	*log.Logger
+var session *robustsession.RobustSession
+
+func setupFlags() {
+	flag.Parse()
+
+	if *network == "" {
+		log.Fatal("You must specify -network")
+	}
 }
 
-func (l ircLogger) Debug(format string, args ...interface{}) {
-	if frankconf.Verbose {
+func setupSession() {
+	var err error
+	session, err = robustsession.Create(*network, *tlsCAFile)
+	if err != nil {
+		log.Fatal("Could not create RobustIRC session: %v", err)
+	}
+
+	log.Printf("Created RobustSession for %s. Session id: %s", *nick, session.SessionId())
+}
+
+func setupKeepalive() {
+	// TODO: only if no other traffic
+	go func() {
+		keepaliveToNetwork := time.After(1 * time.Minute)
+		for {
+			<-keepaliveToNetwork
+			session.PostMessage("PING keepalive")
+			keepaliveToNetwork = time.After(1 * time.Minute)
+		}
+	}()
+}
+
+func setupSignalHandler() {
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
+	go func() {
+		sig := <-signalChan
+		log.Printf("Exiting due to signal %q\n", sig)
+		kill()
+	}()
+}
+
+func setupSessionErrorHandler() {
+	go func() {
+		err := <-session.Errors
+		log.Fatal("RobustIRC session error: %v", err)
+	}()
+}
+
+func kill() {
+	log.Printf("Deleting Session. Goodbye.")
+
+	if err := session.Delete(*nick + " says goodbye"); err != nil {
+		log.Fatalf("Could not properly delete RobustIRC session: %v", err)
+	}
+
+	os.Exit(int(syscall.SIGTERM) | 0x80)
+}
+
+func Post(msg string) {
+	log.Printf(">>> %s", msg)
+
+	if err := session.PostMessage(msg); err != nil {
+		log.Fatalf("Could not post message to RobustIRC: %v", err)
+	}
+}
+
+func Join(channel string) {
+	channel = strings.TrimSpace(channel)
+	channel = strings.TrimPrefix(channel, "#")
+
+	if channel == "" {
 		return
 	}
-	l.Printf("[DEBUG] "+format, args...)
+
+	log.Printf("joining #%s", channel)
+	Post("PRIVMSG chanserv :invite #" + channel)
+	Post("JOIN #" + channel)
 }
 
-func (l ircLogger) Error(format string, args ...interface{}) {
-	l.Printf("[ERROR] "+format, args...)
-}
+func boot() {
+	Post(fmt.Sprintf("NICK %s", *nick))
+	Post(fmt.Sprintf("USER bot 0 * :%s von Bötterich", *nick))
 
-func (l ircLogger) Info(format string, args ...interface{}) {
-	l.Printf("[INFO] "+format, args...)
-}
+	nickserv := make(chan bool)
+	if *nickserv_password != "" {
+		go func() {
+			time.Sleep(10 * time.Second)
+			nickserv <- false
+		}()
 
-func (l ircLogger) Warn(format string, args ...interface{}) {
-	l.Printf("[WARN] "+format, args...)
+		ListenerAdd(func(parsed parser.Message) bool {
+			from_nickserv := strings.HasPrefix(strings.ToLower(parsed.Prefix()), "nickserv!")
+
+			if parsed.Command() == "NOTICE" && from_nickserv {
+				nickserv <- true
+				return false
+			}
+
+			return true
+		})
+
+		log.Printf("Authenticating with NickServ")
+		Post("PRIVMSG nickserv :identify " + *nickserv_password)
+	} else {
+		nickserv <- false
+	}
+
+	go func() {
+		<-nickserv
+		for _, channel := range strings.Split(*channels, " ") {
+			Join(channel)
+		}
+	}()
 }
 
 func main() {
-	flag.Parse() // parses the logging flags. TODO
+	listeners = []Listener{}
+	setupFlags()
+	setupSession()
+	setupSignalHandler()
+	setupKeepalive()
+	setupSessionErrorHandler()
+	boot()
 
-	logging.SetLogger(ircLogger{log.New(os.Stdout, "[irc]", log.LstdFlags)})
-
-	cfg := irc.NewConfig(frankconf.BotNick, frankconf.BotNick, "Frank Böterrich der Zweite")
-	cfg.SSL = true
-	cfg.SSLConfig = &tls.Config{InsecureSkipVerify: true}
-	cfg.Flood = true
-	cfg.Server = frankconf.IrcServer
-	cfg.NewNick = func(n string) string { return n + "_" }
-	c := irc.Client(cfg)
-	c.EnableStateTracking()
-
-	// connect
-	c.HandleFunc(irc.CONNECTED,
-		func(conn *irc.Conn, line *irc.Line) {
-			log.Printf("Connected as: %s\n", conn.Me().Nick)
-			conn.Privmsg("nickserv", "identify "+frankconf.NickServPass)
-
-			var instaJoin string
-			if frankconf.Production {
-				instaJoin = frankconf.InstaJoinProduction
-			} else {
-				instaJoin = frankconf.InstaJoinTesting
-			}
-
-			log.Printf("AutoJoining: %s\n", instaJoin)
-
-			for _, cn := range strings.Split(instaJoin, " ") {
-				if cn != "" {
-					conn.Join(cn)
-				}
-			}
-
-			// handle RSS
-			frank.Rss(conn)
-
-			// watch topics and maybe change them on midnight
-			go frank.TopicChanger(conn)
+	if *verbose {
+		ListenerAdd(func(parsed parser.Message) bool {
+			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix(), parsed.Command(), parsed.Params(), parsed.Trailing())
+			return true
 		})
-
-	// react
-	c.HandleFunc("PRIVMSG",
-		func(conn *irc.Conn, line *irc.Line) {
-			// ignore eicar, the bot we love to hate.
-			// Also ignore i3-bot.
-			if line.Nick == "eicar" || line.Nick == "i3" {
-				return
-			}
-
-			go frank.RaumBang(conn, line)
-			go frank.UriFind(conn, line)
-			go frank.Lmgtfy(conn, line)
-			go frank.Karma(conn, line)
-			go frank.Help(conn, line)
-			go frank.ItsAlive(conn, line)
-			go frank.Highlight(conn, line)
-		})
-
-	if frankconf.Verbose {
-		c.HandleFunc("NOTICE",
-			func(conn *irc.Conn, line *irc.Line) {
-				tgt := line.Args[0]
-				msg := line.Args[1]
-				log.Printf("Debug NOTICE: tgt: %s, msg: %s\n", tgt, msg)
-			})
 	}
 
-	c.HandleFunc("INVITE",
-		func(conn *irc.Conn, line *irc.Line) {
-			tgt := line.Args[0]
-			cnnl := line.Args[1]
+	for {
+		msg := <-session.Messages
 
-			// auto follow invites only in test mode or if asked by master
-			if frankconf.Production && line.Nick != frankconf.Master {
-				log.Printf("only following invites by %s in production\n", frankconf.Master)
-				return
-			}
+		parsed, err := parser.ParseLine(msg)
+		if err != nil {
+			log.Fatal("Could not parse IRC message: %v", err)
+			continue
+		}
 
-			if conn.Me().Nick != tgt {
-				log.Printf("WTF: received invite for %s but target was %s\n", conn.Me().Nick, tgt)
-				return
-			}
+		if parsed.Command() == "PONG" {
+			continue
+		}
 
-			log.Printf("Following invite for channel: %s\n", cnnl)
-			conn.Join(cnnl)
-		})
-
-	// auto deop frank
-	c.HandleFunc("MODE",
-		func(conn *irc.Conn, line *irc.Line) {
-			log.Printf("Mode change array length: %s", len(line.Args))
-			log.Printf("Mode changes: %s", line.Args)
-
-			if len(line.Args) < 3 {
-				// mode statement cannot be not in a channel, so ignore
-				return
-			}
-
-			var modeop bool // true => add mode, false => remove mode
-			var nickIndex int = 2
-			for i := 0; i < len(line.Args[1]); i++ {
-				switch m := line.Args[1][i]; m {
-				case '+':
-					modeop = true
-				case '-':
-					modeop = false
-				case 'o':
-					if !modeop || line.Args[nickIndex] != conn.Me().Nick {
-						nickIndex += 1
-						break
-					}
-					channel := line.Args[0]
-
-					if strings.Contains(" "+frankconf.OpOkIn+" ", " "+channel+" ") {
-						if strings.ToLower(line.Nick) != "chanserv" {
-							conn.Privmsg(channel, "Unbelievable "+line.Nick+", you… https://yrden.de/f1.ogg")
-						}
-					} else {
-						conn.Mode(channel, "+v-o", conn.Me().Nick, conn.Me().Nick)
-						conn.Privmsg(channel, line.Nick+": SKYNET® Protection activated")
-					}
-					return
-				default:
-					nickIndex += 1
-				}
-			}
-		})
-
-	// disconnect
-	quit := make(chan bool)
-	c.HandleFunc(irc.DISCONNECTED,
-		func(conn *irc.Conn, line *irc.Line) { quit <- true })
-
-	// go go GO!
-	if err := c.Connect(); err != nil {
-		log.Fatalf("Connection error: %s\n", err)
+		listenersRun(parsed)
 	}
 
-	log.Printf("Frank has booted\n")
-
-	// Wait for disconnect
-	<-quit
 }
