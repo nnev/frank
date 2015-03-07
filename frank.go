@@ -131,6 +131,11 @@ func main() {
 	setupSessionErrorHandler()
 	boot()
 
+	ListenerAdd(listenerHelp)
+	ListenerAdd(listenerAdmin)
+	ListenerAdd(listenerHighlight)
+	ListenerAdd(listenerKarma)
+
 	if *verbose {
 		ListenerAdd(func(parsed Message) bool {
 			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix(), parsed.Command(), parsed.Params(), parsed.Trailing())
@@ -138,8 +143,17 @@ func main() {
 		})
 	}
 
-	ListenerAdd(listenerHelp)
-	ListenerAdd(listenerAdmin)
+	ListenerAdd(func(parsed Message) bool {
+		if parsed.Command() == ERR_NICKNAMEINUSE {
+			log.Printf("Nickname is already in use. Sleeping for a minute before restarting.")
+			listenersReset()
+			time.Sleep(time.Minute)
+			log.Printf("Killing now due to nickname being in use")
+			kill()
+			return false
+		}
+		return true
+	})
 
 	for {
 		msg := <-session.Messages

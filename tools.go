@@ -41,8 +41,13 @@ func Nick(p Message) string {
 	return strings.SplitN(p.Prefix(), "!", 2)[0]
 }
 
-func Target(p Message) string {
-	return p.Params()[0]
+func Target(parsed Message) string {
+	p := parsed.Params()
+	if len(p) == 0 {
+		return ""
+	} else {
+		return p[0]
+	}
 }
 
 func IsTargetAdmin(p Message) bool {
