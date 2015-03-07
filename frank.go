@@ -140,6 +140,7 @@ func main() {
 	ListenerAdd(listenerInvite)
 	ListenerAdd(listenerLmgtfy)
 	ListenerAdd(listenerUrifind)
+	ListenerAdd(listenerRaumbang)
 
 	if *verbose {
 		ListenerAdd(func(parsed Message) bool {
