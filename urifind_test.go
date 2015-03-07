@@ -1,4 +1,4 @@
-package frank
+package main
 
 import (
 	"fmt"

@@ -1,10 +1,10 @@
-package frank
+package main
 
 import (
-	irc "github.com/fluffle/goirc/client"
 	"log"
 	"net/url"
 	"regexp"
+	"strings"
 )
 
 const googUrl = "http://googl.com/search?btnI=1&q="
@@ -12,20 +12,22 @@ const googUrl = "http://googl.com/search?btnI=1&q="
 // regex that matches lmgtfy requests
 var lmgtfyMatcher = regexp.MustCompile(`^(?:[\d\pL._-]+: )?lmgtfy:? (.+)`)
 
-func Lmgtfy(conn *irc.Conn, line *irc.Line) {
-	tgt := line.Args[0]
-	msg := line.Args[1]
+func listenerLmgtfy(parsed Message) bool {
+	tgt := Target(parsed)
+	msg := parsed.Trailing()
 
-	if tgt[0:1] != "#" {
+	if !strings.HasPrefix(tgt, "#") {
 		// only answer to this in channels
-		return
+		return true
 	}
 
 	post := extractPost(msg)
 
 	if post != "" {
-		conn.Privmsg(tgt, post)
+		Privmsg(tgt, post)
 	}
+
+	return true
 }
 
 // returns the String to be posted

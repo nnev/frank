@@ -136,6 +136,8 @@ func main() {
 	ListenerAdd(listenerHighlight)
 	ListenerAdd(listenerKarma)
 	ListenerAdd(listenerInvite)
+	ListenerAdd(listenerLmgtfy)
+	ListenerAdd(listenerUrifind)
 
 	if *verbose {
 		ListenerAdd(func(parsed Message) bool {

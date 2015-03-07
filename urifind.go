@@ -1,11 +1,9 @@
-package frank
+package main
 
 import (
 	"code.google.com/p/go.net/html"
 	_ "crypto/sha512"
 	"errors"
-	frankconf "github.com/breunigs/frank/config"
-	irc "github.com/fluffle/goirc/client"
 	"golang.org/x/net/html/atom"
 	"io"
 	"log"
@@ -56,27 +54,18 @@ var pointlessTitles = []string{"",
 	"pr0gramm.com",
 	"Google"}
 
-func isIn(needle string, haystack []string) bool {
-	for _, s := range haystack {
-		if s == needle {
-			return true
-		}
-	}
-	return false
-}
-
-func UriFind(conn *irc.Conn, line *irc.Line) {
+func listenerUrifind(parsed Message) bool {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("MEGA-WTF:pkg: %v", r)
 		}
 	}()
 
-	msg := line.Args[1]
+	msg := parsed.Trailing()
 
 	if noSpoilerRegex.MatchString(msg) {
 		log.Printf("not spoilering this line: %s", msg)
-		return
+		return true
 	}
 
 	urls := extract(msg)
@@ -89,7 +78,7 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 		if cp := cacheGetByUrl(url); cp != nil {
 			log.Printf("using cache for URL: %s", cp.url)
 			ago := cacheGetTimeAgo(cp)
-			postTitle(conn, line, cp.title, "cached "+ago+" ago")
+			postTitle(parsed, cp.title, "cached "+ago+" ago")
 			// Hack: add title to the cache again so we can correctly check
 			// for reposts, even if the original link has been cached quite
 			// some time ago. Since the repost check searches by title, but
@@ -110,12 +99,14 @@ func UriFind(conn *irc.Conn, line *irc.Line) {
 			title, _, err := TitleGet(url)
 			if err != nil {
 				//postTitle(conn, line, err.Error(), "Error")
-			} else if !isIn(title, pointlessTitles) {
-				postTitle(conn, line, title, "")
+			} else if !IsIn(title, pointlessTitles) {
+				postTitle(parsed, title, "")
 				cacheAdd(url, title)
 			}
 		}(url)
 	}
+
+	return true
 }
 
 // regexing ////////////////////////////////////////////////////////////
@@ -344,8 +335,8 @@ func cacheGetSecondsToLastPost(title string) int {
 
 // util ////////////////////////////////////////////////////////////////
 
-func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
-	tgt := line.Args[0]
+func postTitle(parsed Message, title string, prefix string) {
+	tgt := Target(parsed)
 
 	secondsAgo := cacheGetSecondsToLastPost(title)
 	if secondsAgo <= noRepostWithinSeconds {
@@ -353,15 +344,15 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 		return
 	}
 
-	if frankconf.Verbose {
+	if *verbose {
 		log.Printf("Title was last posted: %#v (“%s”)", secondsAgo, title)
 	}
 
-	log.Printf("nick=%s, target=%s, title=%s", line.Nick, tgt, title)
+	log.Printf("nick=%s, target=%s, title=%s", Nick(parsed), tgt, title)
 	// if target is our current nick, it was a private message.
 	// Answer the users in this case.
-	if tgt == conn.Me().Nick {
-		tgt = line.Nick
+	if IsPrivateQuery(parsed) {
+		tgt = Nick(parsed)
 	}
 	if prefix == "" {
 		prefix = "Link Info"
@@ -374,7 +365,7 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 	// real world bot adheres to this. Furthermore, people who can’t
 	// configure their client to not highlight them on notices will
 	// complain.
-	conn.Privmsg(tgt, "["+prefix+"] "+title)
+	Privmsg(tgt, "["+prefix+"] "+title)
 }
 
 func clean(text string) string {

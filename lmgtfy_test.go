@@ -1,4 +1,4 @@
-package frank
+package main
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 
 func TestExtractPost(t *testing.T) {
 	var samples = make(map[string]string)
-	samples["xeen: lmgtfy: xeens deine mudda nacktbilder"] = "[LMGTFY] xeens deine mudda nacktbilder - Google Search @ http://www.google.com/search?btnI=1&q=xeens+deine+mudda+nacktbilder" //taken from the channel
+	samples["xeen: lmgtfy: xeens deine mudda nacktbilder"] = "[LMGTFY] frank/lmgtfy_test.go at master · breunigs/frank · GitHub @ https://github.com/breunigs/frank/blob/master/frank/lmgtfy_test.go" //taken from the channel
 	samples["lmgtfy: google maps"] = "[LMGTFY] Google Maps @ https://maps.google.com/maps?output=classic&dg=brw"
 	samples["lmgtfy: yrden my mail setup"] = "[LMGTFY] yrden my mail setup - Google Search @ http://www.google.com/search?btnI=1&q=yrden+my+mail+setup"
 	samples["buaitrnosups"] = ""

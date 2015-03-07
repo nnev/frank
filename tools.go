@@ -60,3 +60,12 @@ func IsNickAdmin(p Message) bool {
 	}
 	return false
 }
+
+func IsIn(needle string, haystack []string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
