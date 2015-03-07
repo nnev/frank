@@ -1,7 +1,6 @@
 package main
 
 import (
-	parser "github.com/husio/go-irc"
 	"log"
 	"strings"
 	"time"
@@ -9,11 +8,10 @@ import (
 
 var lastHelps = map[string]time.Time{}
 
-func listenerHelp(parsed parser.Message) bool {
+func listenerHelp(parsed Message) bool {
 	n := Nick(parsed)
 
-	if parsed.Command() != "PRIVMSG" || Target(parsed) != *nick {
-		// no private query, ignore
+	if !IsPrivateQuery(parsed) {
 		return true
 	}
 

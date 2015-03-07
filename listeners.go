@@ -1,11 +1,10 @@
 package main
 
 import (
-	parser "github.com/husio/go-irc"
 	"log"
 )
 
-type Listener func(parser.Message) bool
+type Listener func(Message) bool
 
 var listeners []Listener
 
@@ -14,7 +13,7 @@ func ListenerAdd(l Listener) {
 	listeners = append(listeners, l)
 }
 
-func listenersRun(parsed parser.Message) {
+func listenersRun(parsed Message) {
 	for idx, listener := range listeners {
 		if listener == nil {
 			continue

@@ -19,11 +19,13 @@ var (
 
 	channels          = flag.String("channels", "", "channels the bot should join. Space separated.")
 	nick              = flag.String("nick", "frank", "nickname of the bot")
-	masters           = flag.String("masters", "xeen", "users who can control the bot. Space separated.")
+	admins            = flag.String("admins", "xeen", "users who can control the bot. Space separated.")
 	nickserv_password = flag.String("nickserv_password", "", "password used to identify with nickserv. No action is taken if password is blank or not set.")
 
 	verbose = flag.Bool("verbose", false, "enable to get very detailed logs")
 )
+
+type Message parser.Message
 
 var session *robustsession.RobustSession
 
@@ -84,48 +86,13 @@ func kill() {
 	os.Exit(int(syscall.SIGTERM) | 0x80)
 }
 
-func Post(msg string) {
-	log.Printf(">>> %s", msg)
-
-	if err := session.PostMessage(msg); err != nil {
-		log.Fatalf("Could not post message to RobustIRC: %v", err)
-	}
-}
-
-func Privmsg(user string, msg string) {
-	Post("PRIVMSG " + user + " :" + msg)
-}
-
-func Join(channel string) {
-	channel = strings.TrimSpace(channel)
-	channel = strings.TrimPrefix(channel, "#")
-
-	if channel == "" {
-		return
-	}
-
-	log.Printf("joining #%s", channel)
-	if *nickserv_password != "" {
-		Privmsg("chanserv", "invite #"+channel)
-	}
-	Post("JOIN #" + channel)
-}
-
-func Nick(p parser.Message) string {
-	return strings.SplitN(p.Prefix(), "!", 2)[0]
-}
-
-func Target(p parser.Message) string {
-	return p.Params()[0]
-}
-
 func boot() {
 	Post(fmt.Sprintf("NICK %s", *nick))
 	Post(fmt.Sprintf("USER bot 0 * :%s von Bötterich", *nick))
 
 	nickserv := make(chan bool)
 	if *nickserv_password != "" {
-		ListenerAdd(func(parsed parser.Message) bool {
+		ListenerAdd(func(parsed Message) bool {
 			from_nickserv := strings.ToLower(Nick(parsed)) == "nickserv"
 
 			if parsed.Command() == "NOTICE" && from_nickserv {
@@ -165,13 +132,14 @@ func main() {
 	boot()
 
 	if *verbose {
-		ListenerAdd(func(parsed parser.Message) bool {
+		ListenerAdd(func(parsed Message) bool {
 			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix(), parsed.Command(), parsed.Params(), parsed.Trailing())
 			return true
 		})
 	}
 
 	ListenerAdd(listenerHelp)
+	ListenerAdd(listenerAdmin)
 
 	for {
 		msg := <-session.Messages
