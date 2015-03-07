@@ -8,7 +8,7 @@ User=nobody
 #   touch karma && chgrp nogroup karma
 # should work fine.
 WorkingDirectory=/opt/frank/
-ExecStart=/opt/frank/frank
+ExecStart=/opt/frank/frank -network robustirc.net -nick frank -channels "#chaos-hd #noname-ev" -verbose -admins="xeen"
 
 [Install]
 WantedBy=multi-user.target
