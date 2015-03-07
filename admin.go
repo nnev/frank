@@ -11,7 +11,7 @@ func listenerAdmin(parsed Message) bool {
 	}
 
 	n := Nick(parsed)
-	if !IsTargetAdmin(parsed) {
+	if !IsNickAdmin(parsed) {
 		// log.Printf("Not executing admin command for normal user %s", n)
 		return true
 	}

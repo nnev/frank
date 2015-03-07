@@ -50,7 +50,7 @@ func Target(parsed Message) string {
 	}
 }
 
-func IsTargetAdmin(p Message) bool {
+func IsNickAdmin(p Message) bool {
 	nick := Nick(p)
 	admins := regexp.MustCompile("\\s+").Split(*admins, -1)
 	for _, admin := range admins {
