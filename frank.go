@@ -132,6 +132,7 @@ func main() {
 	boot()
 
 	go TopicChanger()
+	go Rss()
 
 	ListenerAdd(listenerHelp)
 	ListenerAdd(listenerAdmin)
