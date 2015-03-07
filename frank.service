@@ -10,5 +10,8 @@ User=nobody
 WorkingDirectory=/opt/frank/
 ExecStart=/opt/frank/frank -network robustirc.net -nick frank -channels "#chaos-hd #noname-ev" -verbose -admins="xeen"
 
+Restart=on-failure
+RestartSec=5
+
 [Install]
 WantedBy=multi-user.target
