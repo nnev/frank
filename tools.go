@@ -4,6 +4,7 @@ import (
 	"log"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func Post(msg string) {
@@ -16,6 +17,47 @@ func Post(msg string) {
 
 func Privmsg(user string, msg string) {
 	Post("PRIVMSG " + user + " :" + msg)
+}
+
+func Topic(channel string, topic string) {
+	Post("TOPIC " + channel + " :" + topic)
+}
+
+func TopicGet(channel string) string {
+	received := make(chan string)
+
+	ListenerAdd(func(parsed Message) bool {
+		// Example Topic:
+		// PREFIX=robustirc.net COMMAND=332 PARAMS=[frank #test]
+
+		p := parsed.Params()
+
+		if len(p) < 2 || p[1] != channel {
+			// not the channel we're interested in
+			return true
+		}
+
+		if parsed.Command() == RPL_TOPIC {
+			received <- parsed.Trailing()
+			return false
+		}
+
+		if parsed.Command() == RPL_NOTOPIC {
+			received <- ""
+			return false
+		}
+
+		return true
+	})
+
+	Post("TOPIC " + channel)
+
+	select {
+	case topic := <-received:
+		return topic
+	case <-time.After(10 * time.Second):
+	}
+	return ""
 }
 
 func IsPrivateQuery(p Message) bool {

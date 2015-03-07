@@ -1,9 +1,7 @@
-package frank
+package main
 
 import (
 	"database/sql"
-	frankconf "github.com/breunigs/frank/config"
-	irc "github.com/fluffle/goirc/client"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"log"
@@ -24,13 +22,11 @@ const ROBOT_BLOCK_IDENTIFIER = "ꜰ"
 var regexTomorrow = regexp.MustCompile(`(?i)\smorgen:?\s`)
 var regexToday = regexp.MustCompile(`(?i)\sheute:?\s`)
 
-func TopicChanger(conn *irc.Conn) {
+func TopicChanger() {
 	ticker := updateTicker()
 	for {
 		<-ticker.C
-		for _, cn := range strings.Split(frankconf.TopicChanger, " ") {
-			setTopic(conn, cn)
-		}
+		setTopic("#chaos-hd")
 		ticker = updateTicker()
 	}
 }
@@ -48,14 +44,14 @@ func updateTicker() *time.Ticker {
 	return time.NewTicker(diff)
 }
 
-func setTopic(conn *irc.Conn, channel string) {
+func setTopic(channel string) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("most likely coding error: %v", r)
 		}
 	}()
 
-	topic := conn.StateTracker().GetChannel(channel).Topic
+	topic := TopicGet(channel)
 	newtopic := insertNextEvent(topic)
 	newtopic = advanceDates(newtopic)
 
@@ -66,7 +62,7 @@ func setTopic(conn *irc.Conn, channel string) {
 	log.Printf("%s OLD TOPIC: %s", channel, topic)
 	log.Printf("%s NEW TOPIC: %s", channel, newtopic)
 
-	conn.Topic(channel, newtopic)
+	Topic(channel, newtopic)
 }
 
 func advanceDates(topic string) string {
@@ -157,7 +153,7 @@ type event struct {
 // Function is defined in this way so it may easily be overwritten
 // when testing.
 var getNextEvent = func() *event {
-	db, err := sqlx.Connect(frankconf.SqlDriver, frankconf.SqlConnect)
+	db, err := sqlx.Connect("postgres", "dbname=nnev user=anon host=/var/run/postgresql sslmode=disable")
 	if err != nil {
 		log.Println(err)
 		return nil

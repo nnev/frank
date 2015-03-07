@@ -131,6 +131,8 @@ func main() {
 	setupSessionErrorHandler()
 	boot()
 
+	go TopicChanger()
+
 	ListenerAdd(listenerHelp)
 	ListenerAdd(listenerAdmin)
 	ListenerAdd(listenerHighlight)
