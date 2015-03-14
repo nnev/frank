@@ -20,7 +20,7 @@ func listenerHighlight(parsed Message) bool {
 		return true
 	}
 
-	msg := parsed.Trailing()
+	msg := parsed.Trailing
 
 	if !strings.HasPrefix(msg, "high") {
 		// no highlight request, ignore

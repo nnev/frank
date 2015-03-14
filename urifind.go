@@ -61,7 +61,7 @@ func listenerUrifind(parsed Message) bool {
 		}
 	}()
 
-	msg := parsed.Trailing()
+	msg := parsed.Trailing
 
 	if noSpoilerRegex.MatchString(msg) {
 		log.Printf("not spoilering this line: %s", msg)

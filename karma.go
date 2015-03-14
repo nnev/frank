@@ -39,7 +39,7 @@ func listenerKarma(parsed Message) bool {
 func match(parsed Message) {
 	n := Nick(parsed)
 	tgt := Target(parsed)
-	msg := parsed.Trailing()
+	msg := parsed.Trailing
 
 	if !strings.HasPrefix(tgt, "#") {
 		// love/hate needs to be announced publicly to avoid skewing the
@@ -80,7 +80,7 @@ func match(parsed Message) {
 func answer(parsed Message) {
 	n := Nick(parsed)
 	tgt := Target(parsed)
-	msg := parsed.Trailing()
+	msg := parsed.Trailing
 
 	if !karmaAnswerRegex.MatchString(msg) {
 		return

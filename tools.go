@@ -30,19 +30,19 @@ func TopicGet(channel string) string {
 		// Example Topic:
 		// PREFIX=robustirc.net COMMAND=332 PARAMS=[frank #test]
 
-		p := parsed.Params()
+		p := parsed.Params
 
 		if len(p) < 2 || p[1] != channel {
 			// not the channel we're interested in
 			return true
 		}
 
-		if parsed.Command() == RPL_TOPIC {
-			received <- parsed.Trailing()
+		if parsed.Command == RPL_TOPIC {
+			received <- parsed.Trailing
 			return false
 		}
 
-		if parsed.Command() == RPL_NOTOPIC {
+		if parsed.Command == RPL_NOTOPIC {
 			received <- ""
 			return false
 		}
@@ -61,7 +61,7 @@ func TopicGet(channel string) string {
 }
 
 func IsPrivateQuery(p Message) bool {
-	return p.Command() == "PRIVMSG" && Target(p) == *nick
+	return p.Command == "PRIVMSG" && Target(p) == *nick
 }
 
 func Join(channel string) {
@@ -80,11 +80,11 @@ func Join(channel string) {
 }
 
 func Nick(p Message) string {
-	return strings.SplitN(p.Prefix(), "!", 2)[0]
+	return strings.SplitN(p.Prefix, "!", 2)[0]
 }
 
 func Target(parsed Message) string {
-	p := parsed.Params()
+	p := parsed.Params
 	if len(p) == 0 {
 		return ""
 	} else {

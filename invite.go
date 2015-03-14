@@ -5,7 +5,7 @@ import (
 )
 
 func listenerInvite(parsed Message) bool {
-	if parsed.Command() != "INVITE" {
+	if parsed.Command != "INVITE" {
 		return true
 	}
 
@@ -18,7 +18,7 @@ func listenerInvite(parsed Message) bool {
 		return true
 	}
 
-	channel := parsed.Trailing()
+	channel := parsed.Trailing
 	log.Printf("Following invite for channel: %s", channel)
 	Join(channel)
 

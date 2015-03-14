@@ -14,7 +14,7 @@ var lmgtfyMatcher = regexp.MustCompile(`^(?:[\d\pL._-]+: )?lmgtfy:? (.+)`)
 
 func listenerLmgtfy(parsed Message) bool {
 	tgt := Target(parsed)
-	msg := parsed.Trailing()
+	msg := parsed.Trailing
 
 	if !strings.HasPrefix(tgt, "#") {
 		// only answer to this in channels

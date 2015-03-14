@@ -23,7 +23,7 @@ func listenerRaumbang(parsed Message) bool {
 	}()
 
 	tgt := Target(parsed)
-	msg := parsed.Trailing()
+	msg := parsed.Trailing
 
 	if tgt != bangRaumChannel || !bangRaumRegex.MatchString(msg) {
 		return true

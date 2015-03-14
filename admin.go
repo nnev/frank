@@ -16,7 +16,7 @@ func listenerAdmin(parsed Message) bool {
 		return true
 	}
 
-	msg := parsed.Trailing()
+	msg := parsed.Trailing
 
 	if strings.HasPrefix(msg, "msg ") {
 		cmd := strings.SplitN(msg, " ", 3)

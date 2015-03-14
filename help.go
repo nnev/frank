@@ -15,7 +15,7 @@ func listenerHelp(parsed Message) bool {
 		return true
 	}
 
-	content := strings.ToLower(parsed.Trailing())
+	content := strings.ToLower(parsed.Trailing)
 
 	if content != "help" && content != "!help" {
 		// no help request, ignore

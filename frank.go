@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	parser "github.com/husio/go-irc"
+	parser "github.com/husio/irc"
 	"github.com/robustirc/bridge/robustsession"
 	"log"
 	"os"
@@ -25,7 +25,7 @@ var (
 	verbose = flag.Bool("verbose", false, "enable to get very detailed logs")
 )
 
-type Message parser.Message
+type Message *parser.Message
 
 var session *robustsession.RobustSession
 
@@ -95,7 +95,7 @@ func boot() {
 		ListenerAdd(func(parsed Message) bool {
 			from_nickserv := strings.ToLower(Nick(parsed)) == "nickserv"
 
-			if parsed.Command() == "NOTICE" && from_nickserv {
+			if parsed.Command == "NOTICE" && from_nickserv {
 				nickserv <- true
 				return false
 			}
@@ -135,7 +135,7 @@ func parse(msg string) {
 		return
 	}
 
-	if parsed.Command() == "PONG" {
+	if parsed.Command == "PONG" {
 		return
 	}
 
@@ -165,13 +165,13 @@ func main() {
 
 	if *verbose {
 		ListenerAdd(func(parsed Message) bool {
-			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix(), parsed.Command(), parsed.Params(), parsed.Trailing())
+			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix, parsed.Command, parsed.Params, parsed.Trailing)
 			return true
 		})
 	}
 
 	ListenerAdd(func(parsed Message) bool {
-		if parsed.Command() == ERR_NICKNAMEINUSE {
+		if parsed.Command == ERR_NICKNAMEINUSE {
 			log.Printf("Nickname is already in use. Sleeping for a minute before restarting.")
 			listenersReset()
 			time.Sleep(time.Minute)
