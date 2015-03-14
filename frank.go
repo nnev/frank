@@ -122,6 +122,26 @@ func boot() {
 	}()
 }
 
+func parse(msg string) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("parser broken: %v\nMessage that caused this: %s", r, msg)
+		}
+	}()
+
+	parsed, err := parser.ParseLine(msg)
+	if err != nil {
+		log.Fatal("Could not parse IRC message: %v", err)
+		return
+	}
+
+	if parsed.Command() == "PONG" {
+		return
+	}
+
+	listenersRun(parsed)
+}
+
 func main() {
 	listeners = []Listener{}
 	setupFlags()
@@ -164,18 +184,6 @@ func main() {
 
 	for {
 		msg := <-session.Messages
-
-		parsed, err := parser.ParseLine(msg)
-		if err != nil {
-			log.Fatal("Could not parse IRC message: %v", err)
-			continue
-		}
-
-		if parsed.Command() == "PONG" {
-			continue
-		}
-
-		listenersRun(parsed)
+		parse(msg)
 	}
-
 }
