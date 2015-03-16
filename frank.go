@@ -93,9 +93,11 @@ func boot() {
 	nickserv := make(chan bool, 1)
 	if *nickserv_password != "" {
 		ListenerAdd(func(parsed Message) bool {
-			from_nickserv := strings.ToLower(Nick(parsed)) == "nickserv"
+			// PREFIX=services.robustirc.net COMMAND=MODE PARAMS=[frank2] TRAILING=+r
+			is_me := Target(parsed) == *nick
+			is_plus_r := strings.HasPrefix(parsed.Trailing, "+") && strings.Contains(parsed.Trailing, "r")
 
-			if parsed.Command == "NOTICE" && from_nickserv {
+			if parsed.Command == "MODE" && is_me && is_plus_r {
 				nickserv <- true
 				return false
 			}
@@ -113,7 +115,7 @@ func boot() {
 		select {
 		case <-nickserv:
 		case <-time.After(10 * time.Second):
-			log.Printf("No response from nickserv, joining channels anyway")
+			log.Printf("not authenticated within 10s, joining channels anyway. Maybe check the password, i.e. “/msg frank msg nickserv identify <pass>” and watch the logs.")
 		}
 
 		for _, channel := range strings.Split(*channels, " ") {
