@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 )
 
 func listenerInvite(parsed Message) bool {
@@ -9,8 +10,9 @@ func listenerInvite(parsed Message) bool {
 		return true
 	}
 
-	if !IsNickAdmin(parsed) {
-		log.Printf("not reacting on invite from non-admin user: %s", Nick(parsed))
+	n := Nick(parsed)
+	if !IsNickAdmin(parsed) && strings.ToLower(n) != "chanserv" {
+		log.Printf("not reacting on invite from non-admin user: %s", n)
 		return true
 	}
 
