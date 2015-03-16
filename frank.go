@@ -90,7 +90,7 @@ func boot() {
 	Post(fmt.Sprintf("NICK %s", *nick))
 	Post(fmt.Sprintf("USER bot 0 * :%s von Bötterich", *nick))
 
-	nickserv := make(chan bool)
+	nickserv := make(chan bool, 1)
 	if *nickserv_password != "" {
 		ListenerAdd(func(parsed Message) bool {
 			from_nickserv := strings.ToLower(Nick(parsed)) == "nickserv"
