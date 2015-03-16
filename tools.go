@@ -95,7 +95,11 @@ func Target(parsed Message) string {
 func IsNickAdmin(p Message) bool {
 	nick := Nick(p)
 	admins := regexp.MustCompile("\\s+").Split(*admins, -1)
+
 	for _, admin := range admins {
+		if *verbose {
+			log.Printf("debug admin: checking if |%s|==|%s| (=%v)", nick, admin, nick == admin)
+		}
 		if nick == admin {
 			return true
 		}

@@ -10,6 +10,7 @@ func listenerInvite(parsed Message) bool {
 	}
 
 	if !IsNickAdmin(parsed) {
+		log.Printf("not reacting on invite from non-admin user: %s", Nick(parsed))
 		return true
 	}
 
