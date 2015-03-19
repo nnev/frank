@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const INTERVAL_PERIOD time.Duration = 24 * time.Hour
+const INTERVAL_PERIOD time.Duration = 5 * time.Minute
 const HOUR_TO_TICK int = 0
 const MINUTE_TO_TICK int = 0
 const SECOND_TO_TICK int = 1
@@ -23,25 +23,11 @@ var regexTomorrow = regexp.MustCompile(`(?i)\smorgen:?\s`)
 var regexToday = regexp.MustCompile(`(?i)\sheute:?\s`)
 
 func TopicChanger() {
-	ticker := updateTicker()
+	ticker := time.NewTicker(INTERVAL_PERIOD)
 	for {
 		<-ticker.C
 		setTopic("#chaos-hd")
-		ticker = updateTicker()
 	}
-}
-
-// simple cron design by Daniele B. Thank you.
-// http://stackoverflow.com/a/19549474/1684530
-func updateTicker() *time.Ticker {
-	tn := time.Now()
-	nextTick := time.Date(tn.Year(), tn.Month(), tn.Day(), HOUR_TO_TICK, MINUTE_TO_TICK, SECOND_TO_TICK, 0, time.Local)
-	if !nextTick.After(time.Now()) {
-		nextTick = nextTick.Add(INTERVAL_PERIOD)
-	}
-	diff := nextTick.Sub(time.Now())
-	log.Printf("next topic check in: %s", diff)
-	return time.NewTicker(diff)
 }
 
 func setTopic(channel string) {
@@ -167,7 +153,7 @@ var getNextEvent = func() *event {
 		FROM termine
 		LEFT JOIN vortraege
 		ON termine.date = vortraege.date
-		WHERE termine.date > now()
+		WHERE termine.date >= current_date
 		ORDER BY termine.date ASC
 		LIMIT 1`)
 
