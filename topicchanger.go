@@ -25,8 +25,8 @@ var regexToday = regexp.MustCompile(`(?i)\sheute:?\s`)
 func TopicChanger() {
 	ticker := time.NewTicker(INTERVAL_PERIOD)
 	for {
-		<-ticker.C
 		setTopic("#chaos-hd")
+		<-ticker.C
 	}
 }
 
@@ -153,13 +153,17 @@ var getNextEvent = func() *event {
 		FROM termine
 		LEFT JOIN vortraege
 		ON termine.date = vortraege.date
-		WHERE termine.date >= current_date
+		WHERE termine.date >= $1
 		ORDER BY termine.date ASC
-		LIMIT 1`)
+		LIMIT 1`, time.Now().Format("2006-01-02"))
 
 	if err != nil {
 		log.Println(err)
 		return nil
+	}
+
+	if *verbose {
+		log.Printf("event from SQL: %v", evt)
 	}
 
 	return &evt
