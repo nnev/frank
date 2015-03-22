@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"regexp"
 	"strings"
@@ -23,7 +24,7 @@ func Topic(channel string, topic string) {
 	Post("TOPIC " + channel + " :" + topic)
 }
 
-func TopicGet(channel string) string {
+func TopicGet(channel string) (string, error) {
 	received := make(chan string)
 
 	ListenerAdd(func(parsed Message) bool {
@@ -54,10 +55,10 @@ func TopicGet(channel string) string {
 
 	select {
 	case topic := <-received:
-		return topic
-	case <-time.After(10 * time.Second):
+		return topic, nil
+	case <-time.After(60 * time.Second):
 	}
-	return ""
+	return "", errors.New("failed to get topic: no reply within 60 seconds")
 }
 
 func IsPrivateQuery(p Message) bool {

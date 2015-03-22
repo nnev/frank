@@ -37,7 +37,12 @@ func setTopic(channel string) {
 		}
 	}()
 
-	topic := TopicGet(channel)
+	topic, err := TopicGet(channel)
+	if err != nil {
+		log.Printf("cannot update topic: TopicGet reports: %s", err)
+		return
+	}
+
 	newtopic := insertNextEvent(topic)
 	newtopic = advanceDates(newtopic)
 
