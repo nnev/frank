@@ -61,6 +61,10 @@ func listenerUrifind(parsed Message) bool {
 		}
 	}()
 
+	if parsed.Command != "PRIVMSG" {
+		return true
+	}
+
 	msg := parsed.Trailing
 
 	if noSpoilerRegex.MatchString(msg) {
