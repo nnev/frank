@@ -131,6 +131,10 @@ func parse(msg string) {
 		}
 	}()
 
+	if strings.TrimSpace(msg) == "" {
+		return
+	}
+
 	parsed, err := parser.ParseLine(msg)
 	if err != nil {
 		log.Fatal("Could not parse IRC message: %v", err)
