@@ -1,21 +1,19 @@
 package main
 
 import (
+	"io/ioutil"
 	"log"
-	"os"
 	"runtime/pprof"
 )
 
-func writeMemoryProfile() {
-	if *memprofile == "" {
-		return
-	}
-
-	log.Printf("Saving memory profile to %s", *memprofile)
-	f, err := os.Create(*memprofile)
+func writeMemoryProfile() string {
+	f, err := ioutil.TempFile("/tmp", "frank_memory_debug_")
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Failed to write memory debugging file: %v", err)
 	}
 	pprof.WriteHeapProfile(f)
 	f.Close()
+	log.Printf("Saved memory profile to %s", f.Name())
+
+	return f.Name()
 }

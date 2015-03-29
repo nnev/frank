@@ -40,12 +40,8 @@ func listenerAdmin(parsed Message) bool {
 	}
 
 	if msg == "memprofile" {
-		if *memprofile == "" {
-			Privmsg(Nick(parsed), "Cannot write memory profile, as no option has been added during boot.")
-		} else {
-			writeMemoryProfile()
-			Privmsg(Nick(parsed), "Wrote memory profile to "+*memprofile+", have a look on the server.")
-		}
+		path := writeMemoryProfile()
+		Privmsg(Nick(parsed), "Wrote memory profile to "+path+", have a look on the server.")
 	}
 
 	if strings.HasPrefix(msg, "settopic #") {

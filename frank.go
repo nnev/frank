@@ -22,8 +22,7 @@ var (
 	admins            = flag.String("admins", "xeen", "users who can control the bot. Space separated.")
 	nickserv_password = flag.String("nickserv_password", "", "password used to identify with nickserv. No action is taken if password is blank or not set.")
 
-	verbose    = flag.Bool("verbose", false, "enable to get very detailed logs")
-	memprofile = flag.String("memprofile", "", "write memory profile to this file")
+	verbose = flag.Bool("verbose", false, "enable to get very detailed logs")
 )
 
 type Message *parser.Message
