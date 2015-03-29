@@ -35,10 +35,6 @@ var rssHttpClient = HttpClientWithTimeout()
 
 func Rss(connection *irc.Conn) {
 	conn = connection
-	// this feels wrong, the missing alignment making it hard to read.
-	// Does anybody have a suggestion how to make this nice in go?
-	//~ go pollFeed("#i3-test", "i3", timeFormat2, "http://code.stapelberg.de/git/i3/atom/?h=next")
-	go pollFeed("#i3", "i3website", timeFormat2, "http://code.stapelberg.de/git/i3-website/atom/?h=master")
 	go pollFeed("#i3", "i3faq", timeFormat1, "https://faq.i3wm.org/feeds/rss/")
 }
 
