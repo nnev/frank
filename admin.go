@@ -39,6 +39,15 @@ func listenerAdmin(parsed Message) bool {
 		kill()
 	}
 
+	if msg == "memprofile" {
+		if *memprofile == "" {
+			Privmsg(Nick(parsed), "Cannot write memory profile, as no option has been added during boot.")
+		} else {
+			writeMemoryProfile()
+			Privmsg(Nick(parsed), "Wrote memory profile to "+*memprofile+", have a look on the server.")
+		}
+	}
+
 	if strings.HasPrefix(msg, "settopic #") {
 		cmd := strings.SplitN(msg, " ", 2)
 		channel := cmd[1]
