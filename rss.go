@@ -1,10 +1,12 @@
 package main
 
 import (
-	"code.google.com/p/go.net/html"
-	rss "github.com/jteeuwen/go-pkg-rss"
+	"encoding/xml"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
-	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,162 +20,168 @@ const freshness = 90
 const retryAfter = 9
 
 // how many items to show if there have been many updates in an interval
-const maxItems = 2
+const maxItems = 3
 
-// reference time: Mon Jan 2 15:04:05 -0700 MST 2006
-const timeFormat1 = time.RFC1123Z
-const timeFormat2 = "2006-01-02T15:04:05Z"
-const timeFormat3 = "2006-01-02T15:04:05-07:00"
-
-var ignoreBefore = time.Now()
+var bootTimestamp = time.Now()
 
 var rssHttpClient = HttpClientWithTimeout()
 
 func Rss() {
 	// this feels wrong, the missing alignment making it hard to read.
 	// Does anybody have a suggestion how to make this nice in go?
-	// go pollFeed("#i3", "i3lock", timeFormat2, "http://code.stapelberg.de/git/i3lock/atom/?h=master")
-	// go pollFeed("#i3", "i3status", timeFormat2, "http://code.stapelberg.de/git/i3status/atom/?h=master")
-	// go pollFeed("#i3", "i3website", timeFormat2, "http://code.stapelberg.de/git/i3-website/atom/?h=master")
 	// go pollFeed("#i3", "i3faq", timeFormat1, "https://faq.i3wm.org/feeds/rss/")
 
-	go pollFeed("#chaos-hd", "nn-web", timeFormat3, "https://www.noname-ev.de/gitcommits.atom")
-	go pollFeed("#chaos-hd", "nn-wiki", timeFormat2, "https://www.noname-ev.de/wiki/index.php?title=Special:RecentChanges&feed=atom")
-	go pollFeed("#chaos-hd", "nn-planet", timeFormat2, "http://blogs.noname-ev.de/atom.xml")
-	go pollFeed("#chaos-hd", "frank", timeFormat3, "https://github.com/breunigs/frank/commits/master.atom")
+	go pollFeed("#chaos-hd", "nn-web", "https://www.noname-ev.de/gitcommits.atom")
+	go pollFeed("#chaos-hd", "nn-wiki", "https://www.noname-ev.de/wiki/index.php?title=Special:RecentChanges&feed=atom")
+	go pollFeed("#chaos-hd", "nn-planet", "http://blogs.noname-ev.de/atom.xml")
+	go pollFeed("#chaos-hd", "frank", "https://github.com/breunigs/frank/commits/master.atom")
 }
 
-func pollFeed(channel string, feedName string, timeFormat string, uri string) {
+type Feed struct {
+	// XMLName Name      `xml:"http://www.w3.org/2005/Atom feed"`
+	Title   string    `xml:"title"`
+	Id      string    `xml:"id"`
+	Link    string    `xml:"link"`
+	Updated time.Time `xml:"updated,attr"`
+	Author  string    `xml:"author"`
+	Entry   []Entry   `xml:"entry"`
+}
+
+func (f Feed) postableForIrc() []string {
+	oneLiners := []string{}
+
+	for _, entry := range f.Entry {
+		if !entry.RecentlyPublished() {
+			continue
+		}
+
+		if isRecentUrl(entry.Href()) {
+			continue
+		}
+		addRecentUrl(entry.Href())
+
+		oneLiners = appendIfMiss(oneLiners, entry.OneLiner())
+	}
+
+	return oneLiners
+}
+
+type Entry struct {
+	Title   string    `xml:"title"`
+	Id      string    `xml:"id"`
+	Link    []Link    `xml:"link"`
+	Updated time.Time `xml:"updated"`
+	Author  string    `xml:"author>name"`
+}
+
+func (e Entry) RecentlyPublished() bool {
+	if bootTimestamp.After(e.Updated) {
+		return false
+	}
+
+	return time.Since(e.Updated) < freshness*time.Minute
+}
+
+func (e Entry) Href() string {
+	if len(e.Link) == 0 {
+		return ""
+	}
+
+	return strings.TrimSpace(e.Link[0].Href)
+}
+
+func (e Entry) OneLiner() string {
+	author := strings.TrimSpace(e.Author)
+	if author != "" {
+		author = " (by " + author + ")"
+	}
+
+	return strings.TrimSpace(e.Title) + author + " " + e.Href()
+}
+
+type Link struct {
+	Rel  string `xml:"rel,attr,omitempty"`
+	Href string `xml:"href,attr"`
+}
+
+func loadURL(url string) []byte {
+	r, err := rssHttpClient.Get(url)
+
+	if err != nil {
+		log.Printf("RSS: could resolve URL %s: %s\n", url, err)
+		return []byte{}
+	}
+	defer r.Body.Close()
+
+	// read up to 1 MB
+	limitedBody := io.LimitReader(r.Body, 1024*1024)
+	body, err := ioutil.ReadAll(limitedBody)
+	if err != nil {
+		log.Printf("RSS: could read data from URL %s: %s\n", url, err)
+		return []byte{}
+	}
+
+	return body
+}
+
+func parseAtomFeed(url string) Feed {
+	f := Feed{}
+	if err := xml.Unmarshal(loadURL(url), &f); err != nil {
+		log.Printf("RSS: could not parse %s: %s\n", url, err)
+	}
+
+	return f
+}
+
+func pollFeed(channel string, feedName string, uri string) {
+	for {
+		time.Sleep(checkEvery * time.Minute)
+		pollFeedRunner(channel, feedName, uri)
+	}
+}
+
+func pollFeedRunner(channel string, feedName string, url string) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("MEGA-WTF:pkg:RSS: %v\n", r)
 			time.Sleep(retryAfter * time.Minute)
-			pollFeed(channel, feedName, timeFormat, uri)
+			return
 		}
 	}()
 
-	if *verbose {
-		log.Printf("RSS %s: Setting up %s to post to %s \n", feedName, uri, channel)
+	postitems := parseAtomFeed(url).postableForIrc()
+	cnt := len(postitems)
+
+	// hide updates if they exceed the maxItems counter. If there’s only
+	// one more item in the list than specified in maxItems, all of the
+	// items will be printed – otherwise that item would be replaced by
+	// a useless message that it has been hidden.
+	if cnt > maxItems+1 {
+		msg := fmt.Sprintf("::%s:: had %d updates, showing the latest %d", feedName, cnt, maxItems)
+		Privmsg(channel, msg)
+		postitems = postitems[cnt-maxItems : cnt]
 	}
 
-	// this will process all incoming new feed items and discard all that
-	// are somehow erroneous or older than the threshold. It will directly
-	// post any updates.
-	itemHandler := func(feed *rss.Feed, ch *rss.Channel, newitems []*rss.Item) {
-		log.Printf("RSS: %d new item(s) in %s\n", len(newitems), feedName)
-
-		postitems := []string{}
-
-		for _, item := range newitems {
-			pubdate, err := time.Parse(timeFormat, item.PubDate)
-			// ignore items with unreadable date format
-			if err != nil {
-				log.Printf("RSS: WTF @ reading date for %s: %s (err: %v)\n", feedName, item.PubDate, err)
-				continue
-			}
-
-			// ignore items that were posted before frank booted or are older
-			// than “freshness” minutes
-			if ignoreBefore.After(pubdate) {
-				log.Printf("RSS %s: skipping posts made before booting (posted: %s, booted: %s)\n", feedName, pubdate, ignoreBefore)
-				continue
-			}
-			if time.Since(pubdate) >= freshness*time.Minute {
-				log.Printf("RSS %s: skipping non-fresh post (posted: %s, time_ago: %s)\n", feedName, pubdate, time.Since(pubdate))
-				continue
-			}
-
-			url := ""
-			if len(item.Links) > 0 {
-				url = item.Links[0].Href
-			}
-
-			if url != "" && isRecentUrl(url) {
-				if *verbose {
-					log.Printf("RSS %s: Skipping item because saved as recent URL (URL: %s)\n", feedName, url)
-				}
-				continue
-			}
-
-			if url != "" {
-				addRecentUrl(url)
-				url = " @ " + url
-			}
-
-			author := html.UnescapeString(item.Author.Name)
-			title := html.UnescapeString(item.Title)
-
-			if author == "" {
-				postitems = appendIfMiss(postitems, "::"+feedName+":: "+title+url)
-			} else {
-				postitems = appendIfMiss(postitems, "::"+feedName+":: "+title+url+" (by "+author+")")
-			}
-		}
-
-		cnt := len(postitems)
-
-		// hide updates if they exceed the maxItems counter. If there’s only
-		// one more item in the list than specified in maxItems, all of the
-		// items will be printed – otherwise that item would be replaced by
-		// a useless message that it has been hidden.
-		if cnt > maxItems+1 {
-			cntS := strconv.Itoa(cnt)
-			maxS := strconv.Itoa(maxItems)
-			msg := "::" + feedName + ":: had " + cntS + " updates, showing the latest " + maxS
-			Privmsg(channel, msg)
-			postitems = postitems[cnt-maxItems : cnt]
-		}
-
-		// newer items appear first in feeds, so reverse them here to keep
-		// the order in line with how IRC wprks
-		for i := len(postitems) - 1; i >= 0; i -= 1 {
-			Privmsg(channel, postitems[i])
-			log.Printf("RSS %s: posting %s\n", feedName, postitems[i])
-		}
+	// newer items appear first in feeds, so reverse them here to keep
+	// the order in line with how IRC wprks
+	for i := len(postitems) - 1; i >= 0; i -= 1 {
+		Privmsg(channel, "::"+feedName+":: "+postitems[i])
+		log.Printf("RSS %s: posting %s\n", feedName, postitems[i])
 	}
-
-	// create the feed listener/updater
-	feed := rss.New(checkEvery, true, chanHandler, itemHandler)
-
-	// check for updates infinite loop
-	for {
-		if *verbose {
-			t := feed.LastUpdate().Format(time.RFC3339)
-			log.Printf("RSS %s: Updating now (previous update: %s, refresh ok: %s)\n", feedName, t, feed.CanUpdate())
-		}
-
-		if err := feed.FetchClient(uri, &rssHttpClient, nil); err != nil {
-			log.Printf("RSS %s: Error for %s: %s\n", feedName, uri, err)
-			time.Sleep(retryAfter * time.Minute)
-			continue
-		}
-
-		<-time.After(time.Duration(feed.SecondsTillUpdate() * 1e9))
-	}
-}
-
-// unused default handler
-func chanHandler(feed *rss.Feed, newchannels []*rss.Channel) {
-	log.Printf("RSS: %d new channel(s) in %s\n", len(newchannels), feed.Url)
 }
 
 // append string to slice only if it’s not already present.
 func appendIfMiss(slice []string, s string) []string {
 	for _, elm := range slice {
 		if elm == s {
-			if *verbose {
-				log.Printf("RSS: Not adding “%s” because it is already present\n", s)
-			}
-			return slice
+			continue
 		}
+		return slice
 	}
 	return append(slice, s)
 }
 
-// LIFO that stores the recent posted URLs.
-// Used to avoid posting entries multiple times that have been
-// erroneously detected as new by the RSS library.
-
+// LIFO that stores the recent posted URLs. Used to avoid posting entries multiple times.
 var recent []string = make([]string, 50)
 var recentIndex = 0
 
