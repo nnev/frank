@@ -136,6 +136,9 @@ func parseAtomFeed(url string) Feed {
 func pollFeed(channel string, feedName string, uri string) {
 	for {
 		time.Sleep(checkEvery * time.Minute)
+		if *verbose {
+			log.Printf("RSS %s: checking %s", feedName)
+		}
 		pollFeedRunner(channel, feedName, uri)
 	}
 }
