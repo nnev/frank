@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/html/atom"
 	"io"
 	"log"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -162,7 +163,7 @@ func extract(msg string) []string {
 // http/html stuff /////////////////////////////////////////////////////
 
 func TitleGet(url string) (string, string, error) {
-	c := HttpClientWithTimeout()
+	c := http.Client{Timeout: 10 * time.Second}
 
 	r, err := c.Get(url)
 	if err != nil {

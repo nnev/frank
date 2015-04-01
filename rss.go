@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -24,7 +25,7 @@ const maxItems = 3
 
 var bootTimestamp = time.Now()
 
-var rssHttpClient = HttpClientWithTimeout()
+var rssHttpClient = http.Client{Timeout: 10 * time.Second}
 
 func Rss() {
 	// this feels wrong, the missing alignment making it hard to read.
