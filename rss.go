@@ -52,10 +52,16 @@ func (f Feed) postableForIrc() []string {
 
 	for _, entry := range f.Entry {
 		if !entry.RecentlyPublished() {
+			if *verbose {
+				log.Printf("RSS: skipping non-recent entry. published @ %s :: %s %s", entry.Updated, f.Title(), entry.Title())
+			}
 			continue
 		}
 
 		if isRecentUrl(entry.Href()) {
+			if *verbose {
+				log.Printf("RSS: skipping already already posted :: %s %s", f.Title(), entry.Title())
+			}
 			continue
 		}
 		addRecentUrl(entry.Href())
