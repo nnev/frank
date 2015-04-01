@@ -34,7 +34,7 @@ func Rss() {
 	go pollFeed("#chaos-hd", "nn-web", "https://www.noname-ev.de/gitcommits.atom")
 	go pollFeed("#chaos-hd", "nn-wiki", "https://www.noname-ev.de/wiki/index.php?title=Special:RecentChanges&feed=atom")
 	go pollFeed("#chaos-hd", "nn-planet", "http://blogs.noname-ev.de/atom.xml")
-	go pollFeed("#chaos-hd", "frank", "https://github.com/breunigs/frank/commits/master.atom")
+	go pollFeed("#chaos-hd", "frank", "https://github.com/breunigs/frank/commits/robust.atom")
 }
 
 type Feed struct {
