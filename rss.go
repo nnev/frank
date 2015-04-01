@@ -39,12 +39,12 @@ func Rss() {
 
 type Feed struct {
 	// XMLName Name      `xml:"http://www.w3.org/2005/Atom feed"`
-	Title   string    `xml:"title"`
-	Id      string    `xml:"id"`
-	Link    string    `xml:"link"`
-	Updated time.Time `xml:"updated,attr"`
-	Author  string    `xml:"author"`
-	Entry   []Entry   `xml:"entry"`
+	TitleRaw string    `xml:"title"`
+	Id       string    `xml:"id"`
+	Link     string    `xml:"link"`
+	Updated  time.Time `xml:"updated,attr"`
+	Author   string    `xml:"author"`
+	Entry    []Entry   `xml:"entry"`
 }
 
 func (f Feed) postableForIrc() []string {
@@ -66,12 +66,20 @@ func (f Feed) postableForIrc() []string {
 	return oneLiners
 }
 
+func (f Feed) Title() string {
+	return strings.TrimSpace(f.TitleRaw)
+}
+
 type Entry struct {
-	Title   string    `xml:"title"`
-	Id      string    `xml:"id"`
-	Link    []Link    `xml:"link"`
-	Updated time.Time `xml:"updated"`
-	Author  string    `xml:"author>name"`
+	TitleRaw string    `xml:"title"`
+	Id       string    `xml:"id"`
+	Link     []Link    `xml:"link"`
+	Updated  time.Time `xml:"updated"`
+	Author   string    `xml:"author>name"`
+}
+
+func (e Entry) Title() string {
+	return strings.TrimSpace(e.TitleRaw)
 }
 
 func (e Entry) RecentlyPublished() bool {
@@ -96,7 +104,7 @@ func (e Entry) OneLiner() string {
 		author = " (by " + author + ")"
 	}
 
-	return strings.TrimSpace(e.Title) + author + " " + e.Href()
+	return e.Title() + author + " " + e.Href()
 }
 
 type Link struct {
