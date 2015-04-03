@@ -3,6 +3,7 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"os"
 	"runtime/pprof"
 )
 
@@ -13,6 +14,7 @@ func writeMemoryProfile() string {
 	}
 	pprof.WriteHeapProfile(f)
 	f.Close()
+	os.Chmod(f.Name(), 0644)
 	log.Printf("Saved memory profile to %s", f.Name())
 
 	return f.Name()
