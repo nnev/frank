@@ -46,11 +46,8 @@ func listenersReset() {
 
 func listenersRun(parsed Message) {
 	listenersMutex.Lock()
-	temp := make([]Listener, len(listeners))
-	copy(temp, listeners)
-	listenersMutex.Unlock()
 
-	for _, listener := range temp {
+	for _, listener := range listeners {
 		go func(l Listener) {
 			keep := l(parsed)
 			if !keep {
@@ -58,4 +55,6 @@ func listenersRun(parsed Message) {
 			}
 		}(listener)
 	}
+
+	listenersMutex.Unlock()
 }
