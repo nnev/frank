@@ -1,11 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"code.google.com/p/go.net/html"
 	_ "crypto/sha512"
 	"errors"
 	"golang.org/x/net/html/atom"
+	"golang.org/x/net/html/charset"
+	"golang.org/x/text/transform"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -172,10 +176,25 @@ func TitleGet(url string) (string, string, error) {
 	}
 	defer r.Body.Close()
 
-	lastUrl := r.Request.URL.String()
+	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1024*httpReadKByte))
+	if err != nil {
+		log.Printf("WTF: could not read body for %s: %s", url, err)
+		body = []byte{}
+	}
 
-	// TODO: r.Body → utf8?
-	title, tweet := titleParseHtml(io.LimitReader(r.Body, 1024*httpReadKByte))
+	contentType := r.Header.Get("Content-Type")
+	encoding, encodingName, _ := charset.DetermineEncoding(body, contentType)
+	if encodingName != "utf-8" {
+		if *verbose {
+			log.Printf("Encoding for URL %s: %s", url, encodingName)
+		}
+
+		fixed := transform.NewReader(bytes.NewReader(body), encoding.NewDecoder())
+		body, err = ioutil.ReadAll(fixed)
+	}
+
+	title, tweet := titleParseHtml(body)
+	lastUrl := r.Request.URL.String()
 
 	if r.StatusCode != 200 {
 		return "", lastUrl, errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
@@ -194,8 +213,8 @@ func TitleGet(url string) (string, string, error) {
 // suitable tags. Currently this is the page’s title tag and tweets
 // when the HTML-code is similar enough to twitter.com. Returns
 // title and tweet.
-func titleParseHtml(r io.Reader) (string, string) {
-	doc, err := html.Parse(r)
+func titleParseHtml(body []byte) (string, string) {
+	doc, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
 		log.Printf("WTF: html parser blew up: %s\n", err)
 		return "", ""
