@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/breunigs/frank.svg?branch=master)](https://travis-ci.org/breunigs/frank)
+[![Build Status](https://travis-ci.org/breunigs/frank.svg?branch=robust)](https://travis-ci.org/breunigs/frank)
 
 ### Intro
 
