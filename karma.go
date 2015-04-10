@@ -22,7 +22,7 @@ var karmaAnswerRegex = regexp.MustCompile(`(?i)^karma:?\s+(?:for\s+)?([\d\pL]+)\
 var defaultData = map[string]int{"frank": 9999}
 var data = readData()
 
-func listenerKarma(parsed Message) bool {
+func runnerKarma(parsed Message) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Bug in karma: %v", r)
@@ -31,7 +31,6 @@ func listenerKarma(parsed Message) bool {
 
 	match(parsed)
 	answer(parsed)
-	return true
 }
 
 // reads the current line for karma-esque expressions and ups/dows the

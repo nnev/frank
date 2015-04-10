@@ -15,7 +15,7 @@ const bangRaumChannel = "#chaos-hd"
 var bangRaumRegex = regexp.MustCompile(`(?i)^!raum($|\s)`)
 var bangRaumLast = time.Now().Add(time.Second * -10)
 
-func listenerRaumbang(parsed Message) bool {
+func runnerRaumbang(parsed Message) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("MEGA-WTF:pkg: %v", r)
@@ -26,14 +26,14 @@ func listenerRaumbang(parsed Message) bool {
 	msg := parsed.Trailing
 
 	if tgt != bangRaumChannel || !bangRaumRegex.MatchString(msg) {
-		return true
+		return
 	}
 
 	dur := time.Since(bangRaumLast)
 
 	if dur.Seconds() <= 10 {
 		log.Printf("WTF: last room stat request was %v seconds ago, skipping", dur)
-		return true
+		return
 	}
 
 	log.Printf("Received room stat request from %s\n", Nick(parsed))
@@ -45,6 +45,4 @@ func listenerRaumbang(parsed Message) bool {
 	} else {
 		Privmsg(tgt, "Raumstatus: Ein Gerät innerhalb des Raumes beantwortet Weltnetzanfragen.")
 	}
-
-	return true
 }

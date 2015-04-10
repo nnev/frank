@@ -59,7 +59,7 @@ var pointlessTitles = []string{"",
 	"pr0gramm.com",
 	"Google"}
 
-func listenerUrifind(parsed Message) bool {
+func runnerUrifind(parsed Message) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("MEGA-WTF:pkg: %v", r)
@@ -67,14 +67,14 @@ func listenerUrifind(parsed Message) bool {
 	}()
 
 	if parsed.Command != "PRIVMSG" {
-		return true
+		return
 	}
 
 	msg := parsed.Trailing
 
 	if noSpoilerRegex.MatchString(msg) {
 		log.Printf("not spoilering this line: %s", msg)
-		return true
+		return
 	}
 
 	urls := extract(msg)
@@ -114,8 +114,6 @@ func listenerUrifind(parsed Message) bool {
 			}
 		}(url)
 	}
-
-	return true
 }
 
 // regexing ////////////////////////////////////////////////////////////

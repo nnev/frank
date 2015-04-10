@@ -5,15 +5,15 @@ import (
 	"strings"
 )
 
-func listenerAdmin(parsed Message) bool {
+func runnerAdmin(parsed Message) {
 	if !IsPrivateQuery(parsed) {
-		return true
+		return
 	}
 
 	n := Nick(parsed)
 	if !IsNickAdmin(parsed) {
 		// log.Printf("Not executing admin command for normal user %s", n)
-		return true
+		return
 	}
 
 	msg := parsed.Trailing
@@ -49,6 +49,4 @@ func listenerAdmin(parsed Message) bool {
 		channel := cmd[1]
 		setTopic(channel)
 	}
-
-	return true
 }

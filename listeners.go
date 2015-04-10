@@ -3,44 +3,74 @@ package main
 import (
 	"log"
 	"sync"
+	"time"
 )
 
-type Listener func(Message) bool
+type Runner func(Message)
 
-var listenersMutex sync.Mutex
-var listeners []Listener
-
-func ListenerAdd(l Listener) {
-	log.Printf("Adding Listener: %v", l)
-	listenersMutex.Lock()
-	listeners = append(listeners, l)
-	listenersMutex.Unlock()
+type Listener struct {
+	desc    string
+	created string
+	runner  Runner
 }
 
-func listenerRemove(listener Listener) {
-	log.Printf("Removing Listener: %v", listener)
+var listenersMutex sync.Mutex
+var listeners []*Listener
 
+func ListenerAdd(desc string, r Runner) *Listener {
+	log.Printf("Adding Listener for: %s", desc)
+
+	l := &Listener{runner: r, desc: desc, created: time.Now().Format("2006-01-02 15:04:05 -0700")}
+	l.Add()
+
+	return l
+}
+
+func (listener *Listener) Add() {
 	listenersMutex.Lock()
-	index := -1
-	for idx, l := range listeners {
-		if &listener == &l {
-			index = idx
-		}
-	}
-
-	if index > 0 {
-		listeners[index] = listeners[len(listeners)-1]
-		listeners = listeners[0 : len(listeners)-1]
-	}
-
+	listeners = append(listeners, listener)
 	listenersMutex.Unlock()
+	listenersDebug()
+}
+
+func (listener *Listener) Remove() {
+	go func() {
+		listenersMutex.Lock()
+		index := -1
+		for idx, l := range listeners {
+			if listener == l {
+				index = idx
+			}
+		}
+
+		if index >= 0 {
+			log.Printf("Removing Listener: %s at index %d", listener, index)
+			listeners[index] = listeners[len(listeners)-1]
+			listeners = listeners[0 : len(listeners)-1]
+		} else {
+			log.Printf("Removing Listener: %s but was not found in list", listener)
+		}
+
+		listenersMutex.Unlock()
+		listenersDebug()
+	}()
+}
+
+func listenersDebug() {
+	listenersMutex.Lock()
+	s := ""
+	for _, listener := range listeners {
+		s += listener.desc + ", "
+	}
+	log.Printf("listeners #%d: %s", len(listeners), s)
+	listenersMutex.Unlock()
+
 }
 
 func listenersReset() {
-	log.Printf("Resetting listeners")
-
 	listenersMutex.Lock()
-	listeners = []Listener{}
+	listeners = []*Listener{}
+	log.Printf("# of listeners: 0")
 	listenersMutex.Unlock()
 }
 
@@ -48,11 +78,8 @@ func listenersRun(parsed Message) {
 	listenersMutex.Lock()
 
 	for _, listener := range listeners {
-		go func(l Listener) {
-			keep := l(parsed)
-			if !keep {
-				listenerRemove(l)
-			}
+		go func(l *Listener) {
+			l.runner(parsed)
 		}(listener)
 	}
 

@@ -8,24 +8,24 @@ import (
 
 var lastHelps = map[string]time.Time{}
 
-func listenerHelp(parsed Message) bool {
+func runnerHelp(parsed Message) {
 	n := Nick(parsed)
 
 	if !IsPrivateQuery(parsed) {
-		return true
+		return
 	}
 
 	content := strings.ToLower(parsed.Trailing)
 
 	if content != "help" && content != "!help" {
 		// no help request, ignore
-		return true
+		return
 	}
 
 	last := lastHelps[n]
 	if time.Since(last).Minutes() <= 1 {
 		log.Printf("User %s tried spamming for help, not answering (last request @ %v)", n, last)
-		return true
+		return
 	}
 
 	lastHelps[n] = time.Now()
@@ -52,6 +52,4 @@ func listenerHelp(parsed Message) bool {
 
 	Privmsg(n, "If you need more details, please look at my source:")
 	Privmsg(n, "https://github.com/breunigs/frank")
-
-	return true
 }

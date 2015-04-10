@@ -12,13 +12,13 @@ const googUrl = "http://googl.com/search?btnI=1&q="
 // regex that matches lmgtfy requests
 var lmgtfyMatcher = regexp.MustCompile(`^(?:[\d\pL._-]+: )?lmgtfy:? (.+)`)
 
-func listenerLmgtfy(parsed Message) bool {
+func runnerLmgtfy(parsed Message) {
 	tgt := Target(parsed)
 	msg := parsed.Trailing
 
 	if !strings.HasPrefix(tgt, "#") {
 		// only answer to this in channels
-		return true
+		return
 	}
 
 	post := extractPost(msg)
@@ -26,8 +26,6 @@ func listenerLmgtfy(parsed Message) bool {
 	if post != "" {
 		Privmsg(tgt, post)
 	}
-
-	return true
 }
 
 // returns the String to be posted

@@ -76,6 +76,12 @@ func setupSessionErrorHandler() {
 	}()
 }
 
+func setupJoinChannels() {
+	for _, channel := range strings.Split(*channels, " ") {
+		Join(channel)
+	}
+}
+
 func kill() {
 	log.Printf("Deleting Session. Goodbye.")
 
@@ -90,37 +96,36 @@ func boot() {
 	Post(fmt.Sprintf("NICK %s", *nick))
 	Post(fmt.Sprintf("USER bot 0 * :%s von Bötterich", *nick))
 
-	nickserv := make(chan bool, 1)
-	if *nickserv_password != "" {
-		ListenerAdd(func(parsed Message) bool {
-			// PREFIX=services.robustirc.net COMMAND=MODE PARAMS=[frank2] TRAILING=+r
-			is_me := Target(parsed) == *nick
-			is_plus_r := strings.HasPrefix(parsed.Trailing, "+") && strings.Contains(parsed.Trailing, "r")
-
-			if parsed.Command == "MODE" && is_me && is_plus_r {
-				nickserv <- true
-				return false
-			}
-
-			return true
-		})
-
-		log.Printf("Authenticating with NickServ")
-		Privmsg("nickserv", "identify "+*nickserv_password)
-	} else {
-		nickserv <- false
+	if *nickserv_password == "" {
+		setupJoinChannels()
+		return
 	}
+
+	nickserv := make(chan bool, 1)
+	listener := ListenerAdd("nickserv auth detector", func(parsed Message) {
+		// PREFIX=services.robustirc.net COMMAND=MODE PARAMS=[frank2] TRAILING=+r
+		is_me := Target(parsed) == *nick
+		is_plus_r := strings.HasPrefix(parsed.Trailing, "+") && strings.Contains(parsed.Trailing, "r")
+
+		if parsed.Command == "MODE" && is_me && is_plus_r {
+			nickserv <- true
+		}
+	})
+
+	log.Printf("NICKSERV: Authenticating…")
+	Privmsg("nickserv", "identify "+*nickserv_password)
 
 	go func() {
 		select {
 		case <-nickserv:
+			log.Printf("NICKSERV: auth successful")
+
 		case <-time.After(10 * time.Second):
-			log.Printf("not authenticated within 10s, joining channels anyway. Maybe check the password, i.e. “/msg frank msg nickserv identify <pass>” and watch the logs.")
+			log.Printf("NICKSERV: auth failed. No response within 10s, joining channels anyway. Maybe check the password, i.e. “/msg frank msg nickserv identify <pass>” and watch the logs.")
 		}
 
-		for _, channel := range strings.Split(*channels, " ") {
-			Join(channel)
-		}
+		listener.Remove()
+		setupJoinChannels()
 	}()
 }
 
@@ -149,7 +154,7 @@ func parse(msg string) {
 }
 
 func main() {
-	listeners = []Listener{}
+	listenersReset()
 	setupFlags()
 	setupSession()
 	setupSignalHandler()
@@ -160,32 +165,29 @@ func main() {
 	go TopicChanger()
 	go Rss()
 
-	ListenerAdd(listenerHelp)
-	ListenerAdd(listenerAdmin)
-	ListenerAdd(listenerHighlight)
-	ListenerAdd(listenerKarma)
-	ListenerAdd(listenerInvite)
-	ListenerAdd(listenerLmgtfy)
-	ListenerAdd(listenerUrifind)
-	ListenerAdd(listenerRaumbang)
+	ListenerAdd("help", runnerHelp)
+	ListenerAdd("admin", runnerAdmin)
+	ListenerAdd("highlight", runnerHighlight)
+	ListenerAdd("karma", runnerKarma)
+	ListenerAdd("invite", runnerInvite)
+	ListenerAdd("lmgtfy", runnerLmgtfy)
+	ListenerAdd("urifind", runnerUrifind)
+	ListenerAdd("raumbang", runnerRaumbang)
 
 	if *verbose {
-		ListenerAdd(func(parsed Message) bool {
+		ListenerAdd("verbose debugger", func(parsed Message) {
 			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix, parsed.Command, parsed.Params, parsed.Trailing)
-			return true
 		})
 	}
 
-	ListenerAdd(func(parsed Message) bool {
+	ListenerAdd("nickname checker", func(parsed Message) {
 		if parsed.Command == ERR_NICKNAMEINUSE {
 			log.Printf("Nickname is already in use. Sleeping for a minute before restarting.")
 			listenersReset()
 			time.Sleep(time.Minute)
 			log.Printf("Killing now due to nickname being in use")
 			kill()
-			return false
 		}
-		return true
 	})
 
 	for {

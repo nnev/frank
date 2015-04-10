@@ -9,7 +9,7 @@ import (
 
 var customTextRegex = regexp.MustCompile(`^(?:high|highpub)\s+(.{1,70})`)
 
-func listenerHighlight(parsed Message) bool {
+func runnerHighlight(parsed Message) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("MEGA-WTF:pkg: %v", r)
@@ -17,14 +17,14 @@ func listenerHighlight(parsed Message) bool {
 	}()
 
 	if !IsPrivateQuery(parsed) {
-		return true
+		return
 	}
 
 	msg := parsed.Trailing
 
 	if !strings.HasPrefix(msg, "high") {
 		// no highlight request, ignore
-		return true
+		return
 	}
 
 	n := Nick(parsed)
@@ -47,6 +47,4 @@ func listenerHighlight(parsed Message) bool {
 		log.Printf("highlighting %s privately for: %s\n", n, highlight)
 		Privmsg(n, highlight)
 	}
-
-	return true
 }

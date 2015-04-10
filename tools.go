@@ -27,7 +27,7 @@ func Topic(channel string, topic string) {
 func TopicGet(channel string) (string, error) {
 	received := make(chan string)
 
-	ListenerAdd(func(parsed Message) bool {
+	topicGetRunner := func(parsed Message) {
 		// Example Topic:
 		// PREFIX=robustirc.net COMMAND=332 PARAMS=[frank #test]
 
@@ -35,28 +35,28 @@ func TopicGet(channel string) (string, error) {
 
 		if len(p) < 2 || p[1] != channel {
 			// not the channel we're interested in
-			return true
+			return
 		}
 
 		if parsed.Command == RPL_TOPIC {
 			received <- parsed.Trailing
-			return false
 		}
 
 		if parsed.Command == RPL_NOTOPIC {
 			received <- ""
-			return false
 		}
 
-		return true
-	})
+	}
 
+	l := ListenerAdd("topic getter", topicGetRunner)
 	Post("TOPIC " + channel)
 
 	select {
 	case topic := <-received:
+		l.Remove()
 		return topic, nil
 	case <-time.After(60 * time.Second):
+		l.Remove()
 	}
 	return "", errors.New("failed to get topic: no reply within 60 seconds")
 }
