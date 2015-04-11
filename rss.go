@@ -169,6 +169,7 @@ func pollFeedRunner(channel string, feedName string, url string) {
 
 	postitems := parseAtomFeed(url).postableForIrc()
 	cnt := len(postitems)
+	log.Printf("RSS %s: found %d new items: %v", feedName, cnt, postitems)
 
 	// hide updates if they exceed the maxItems counter. If there’s only
 	// one more item in the list than specified in maxItems, all of the
@@ -178,6 +179,7 @@ func pollFeedRunner(channel string, feedName string, url string) {
 		msg := fmt.Sprintf("::%s:: had %d updates, showing the latest %d", feedName, cnt, maxItems)
 		Privmsg(channel, msg)
 		postitems = postitems[cnt-maxItems : cnt]
+		log.Printf("RSS %s: posting %s\n", feedName, msg)
 	}
 
 	// newer items appear first in feeds, so reverse them here to keep
