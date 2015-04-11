@@ -41,10 +41,10 @@ func runnerHighlight(parsed Message) {
 	time.Sleep(4900 * time.Millisecond)
 
 	if strings.HasPrefix(msg, "highpub") {
-		log.Printf("highlighting %s publicly for: %s\n", n, highlight)
+		log.Printf("highlighting %s publicly for: %s", n, highlight)
 		Privmsg("#test", "highlight test: "+highlight)
 	} else {
-		log.Printf("highlighting %s privately for: %s\n", n, highlight)
+		log.Printf("highlighting %s privately for: %s", n, highlight)
 		Privmsg(n, highlight)
 	}
 }

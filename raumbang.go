@@ -36,7 +36,7 @@ func runnerRaumbang(parsed Message) {
 		return
 	}
 
-	log.Printf("Received room stat request from %s\n", Nick(parsed))
+	log.Printf("Received room stat request from %s", Nick(parsed))
 	bangRaumLast = time.Now()
 
 	err := exec.Command("ping", "-q", "-l 3", "-c 3", "-w 1", hostToPing).Run()

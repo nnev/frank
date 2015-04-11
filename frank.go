@@ -64,7 +64,7 @@ func setupSignalHandler() {
 	signal.Notify(signalChan, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		sig := <-signalChan
-		log.Printf("Exiting due to signal %q\n", sig)
+		log.Printf("Exiting due to signal %q", sig)
 		kill()
 	}()
 }

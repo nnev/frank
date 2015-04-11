@@ -169,7 +169,7 @@ func TitleGet(url string) (string, string, error) {
 
 	r, err := c.Get(url)
 	if err != nil {
-		log.Printf("WTF: could not resolve %s: %s\n", url, err)
+		log.Printf("WTF: could not resolve %s: %s", url, err)
 		return "", url, err
 	}
 	defer r.Body.Close()
@@ -202,7 +202,7 @@ func TitleGet(url string) (string, string, error) {
 		title = tweet
 	}
 
-	log.Printf("Title for URL %s: %s\n", url, title)
+	log.Printf("Title for URL %s: %s", url, title)
 
 	return title, lastUrl, nil
 }
@@ -214,7 +214,7 @@ func TitleGet(url string) (string, string, error) {
 func titleParseHtml(body []byte) (string, string) {
 	doc, err := html.Parse(bytes.NewReader(body))
 	if err != nil {
-		log.Printf("WTF: html parser blew up: %s\n", err)
+		log.Printf("WTF: html parser blew up: %s", err)
 		return "", ""
 	}
 

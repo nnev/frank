@@ -123,7 +123,7 @@ func loadURL(url string) []byte {
 	r, err := rssHttpClient.Get(url)
 
 	if err != nil {
-		log.Printf("RSS: could resolve URL %s: %s\n", url, err)
+		log.Printf("RSS: could resolve URL %s: %s", url, err)
 		return []byte{}
 	}
 	defer r.Body.Close()
@@ -132,7 +132,7 @@ func loadURL(url string) []byte {
 	limitedBody := io.LimitReader(r.Body, 1024*1024)
 	body, err := ioutil.ReadAll(limitedBody)
 	if err != nil {
-		log.Printf("RSS: could read data from URL %s: %s\n", url, err)
+		log.Printf("RSS: could read data from URL %s: %s", url, err)
 		return []byte{}
 	}
 
@@ -142,7 +142,7 @@ func loadURL(url string) []byte {
 func parseAtomFeed(url string) Feed {
 	f := Feed{}
 	if err := xml.Unmarshal(loadURL(url), &f); err != nil {
-		log.Printf("RSS: could not parse %s: %s\n", url, err)
+		log.Printf("RSS: could not parse %s: %s", url, err)
 	}
 
 	return f
@@ -161,7 +161,7 @@ func pollFeed(channel string, feedName string, url string) {
 func pollFeedRunner(channel string, feedName string, url string) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("MEGA-WTF:pkg:RSS: %v\n", r)
+			log.Printf("MEGA-WTF:pkg:RSS: %v", r)
 			time.Sleep(retryAfter * time.Minute)
 			return
 		}
@@ -179,14 +179,14 @@ func pollFeedRunner(channel string, feedName string, url string) {
 		msg := fmt.Sprintf("::%s:: had %d updates, showing the latest %d", feedName, cnt, maxItems)
 		Privmsg(channel, msg)
 		postitems = postitems[cnt-maxItems : cnt]
-		log.Printf("RSS %s: posting %s\n", feedName, msg)
+		log.Printf("RSS %s: posting %s", feedName, msg)
 	}
 
 	// newer items appear first in feeds, so reverse them here to keep
 	// the order in line with how IRC wprks
 	for i := len(postitems) - 1; i >= 0; i -= 1 {
 		Privmsg(channel, "::"+feedName+":: "+postitems[i])
-		log.Printf("RSS %s: posting %s\n", feedName, postitems[i])
+		log.Printf("RSS %s: posting %s", feedName, postitems[i])
 	}
 }
 
