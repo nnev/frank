@@ -116,10 +116,12 @@ func TestPostableForIrc(t *testing.T) {
 }
 
 func atomPlanetSample(updated time.Time) string {
+	format := "2006-01-02T15:04:05Z"
+
 	return `<?xml version="1.0"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:planet="http://planet.intertwingly.net/" xmlns:indexing="urn:atom-extension:indexing" indexing:index="no"><access:restriction xmlns:access="http://www.bloglines.com/about/specs/fac-1.0" relationship="deny"/>
   <title>Planet NoName e.V.</title>
-  <updated>` + updated.Format("2006-01-02T15:04:05Z") + `</updated>
+  <updated>` + updated.Format(format) + `</updated>
   <generator uri="http://intertwingly.net/code/venus/">Venus</generator>
   <author>
     <name>NoName e.V. Planet Admin</name>
@@ -144,7 +146,7 @@ func atomPlanetSample(updated time.Time) string {
 </code></pre>
 </div>
     </summary>
-    <updated>` + updated.Format("2006-01-02T15:04:05Z") + `</updated>
+    <updated>` + updated.Format(format) + `</updated>
     <source>
       <id>http://blog.ezelo.de/</id>
       <author>
@@ -153,7 +155,7 @@ func atomPlanetSample(updated time.Time) string {
       <link href="http://blog.ezelo.de/" rel="alternate" type="text/html"/>
       <link href="http://blog.ezelo.de/index.xml" rel="self" type="application/rss+xml"/>
       <title>on little indie little … little strange</title>
-      <updated>` + updated.Format("2006-01-02T15:04:05Z") + `</updated>
+      <updated>` + updated.Format(format) + `</updated>
     </source>
   </entry>
 </feed>
@@ -161,20 +163,22 @@ func atomPlanetSample(updated time.Time) string {
 }
 
 func atomGithubSample(updated time.Time) string {
+	format := "2006-01-02T15:04:05-07:00"
+
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
   <id>tag:github.com,2008:/breunigs/frank/commits/robust</id>
   <link type="text/html" rel="alternate" href="https://github.com/breunigs/frank/commits/robust"/>
   <link type="application/atom+xml" rel="self" href="https://github.com/breunigs/frank/commits/robust.atom"/>
   <title>Recent Commits to frank:robust</title>
-  <updated>` + updated.Format("2006-01-02T15:04:05-07:00") + `</updated>
+  <updated>` + updated.Format(format) + `</updated>
   <entry>
     <id>tag:github.com,2008:Grit::Commit/05c498f24c791776a5c100d099abd5e4976c4af7</id>
     <link type="text/html" rel="alternate" href="https://github.com/breunigs/frank/commit/05c498f24c791776a5c100d099abd5e4976c4af7"/>
     <title>
         fix appendIfMiss logic error. And actually run its tests.
     </title>
-    <updated>` + updated.Format("2006-01-02T15:04:05-07:00") + `</updated>
+    <updated>` + updated.Format(format) + `</updated>
     <media:thumbnail height="30" width="30" url="https://avatars3.githubusercontent.com/u/307954?v=3&amp;s=30"/>
     <author>
       <name>breunigs</name>
@@ -190,7 +194,7 @@ func atomGithubSample(updated time.Time) string {
     <title>
         add some tests for RSS parsing to make lil&#39;sECuRE happy
     </title>
-    <updated>` + updated.Add(-10*time.Second).Format("2006-01-02T15:04:05-07:00") + `</updated>
+    <updated>` + updated.Add(-10*time.Second).Format(format) + `</updated>
     <media:thumbnail height="30" width="30" url="https://avatars3.githubusercontent.com/u/307954?v=3&amp;s=30"/>
     <author>
       <name>breunigs</name>
