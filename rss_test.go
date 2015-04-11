@@ -65,9 +65,10 @@ func TestLoadURL(t *testing.T) {
 }
 
 func TestPostableForIrc(t *testing.T) {
-	feedUpdated := time.Now().Format("2006-01-02T15:04:05Z")
+	// simple detect
+	feedUpdated := time.Now().Add(time.Minute)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, atomPlanetSample(feedUpdated, feedUpdated))
+		fmt.Fprintln(w, atomPlanetSample(feedUpdated))
 	}))
 	defer ts.Close()
 	postitems := parseAtomFeed(ts.URL).postableForIrc()
@@ -76,9 +77,10 @@ func TestPostableForIrc(t *testing.T) {
 		t.Errorf("should contain the post as postable for irc")
 	}
 
-	feedUpdated = time.Now().Add(-(freshness + 1) * time.Minute).Format("2006-01-02T15:04:05Z")
+	// freshness
+	feedUpdated = time.Now().Add(-(freshness + 1) * time.Minute)
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, atomPlanetSample(feedUpdated, feedUpdated))
+		fmt.Fprintln(w, atomPlanetSample(feedUpdated))
 	}))
 	defer ts.Close()
 	postitems = parseAtomFeed(ts.URL).postableForIrc()
@@ -86,13 +88,38 @@ func TestPostableForIrc(t *testing.T) {
 	if len(postitems) != 0 {
 		t.Errorf("should not contain posts created before freshness period")
 	}
+
+	// more than one post
+	feedUpdated = time.Now().Add(time.Minute)
+	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, atomGithubSample(feedUpdated))
+	}))
+	defer ts.Close()
+	postitems = parseAtomFeed(ts.URL).postableForIrc()
+
+	if len(postitems) != 2 {
+		t.Errorf("should contain both items, but contains %s", postitems)
+	}
+
+	// boottime check
+	feedUpdated = time.Now().Add(-time.Minute)
+	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, atomGithubSample(feedUpdated))
+	}))
+	defer ts.Close()
+	postitems = parseAtomFeed(ts.URL).postableForIrc()
+
+	if len(postitems) != 0 {
+		t.Errorf("should not contain any items created before booting %s", postitems)
+	}
+
 }
 
-func atomPlanetSample(feedUpdated string, postUpdated string) string {
+func atomPlanetSample(updated time.Time) string {
 	return `<?xml version="1.0"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:planet="http://planet.intertwingly.net/" xmlns:indexing="urn:atom-extension:indexing" indexing:index="no"><access:restriction xmlns:access="http://www.bloglines.com/about/specs/fac-1.0" relationship="deny"/>
   <title>Planet NoName e.V.</title>
-  <updated>` + feedUpdated + `</updated>
+  <updated>` + updated.Format("2006-01-02T15:04:05Z") + `</updated>
   <generator uri="http://intertwingly.net/code/venus/">Venus</generator>
   <author>
     <name>NoName e.V. Planet Admin</name>
@@ -117,7 +144,7 @@ func atomPlanetSample(feedUpdated string, postUpdated string) string {
 </code></pre>
 </div>
     </summary>
-    <updated>` + postUpdated + `</updated>
+    <updated>` + updated.Format("2006-01-02T15:04:05Z") + `</updated>
     <source>
       <id>http://blog.ezelo.de/</id>
       <author>
@@ -126,9 +153,52 @@ func atomPlanetSample(feedUpdated string, postUpdated string) string {
       <link href="http://blog.ezelo.de/" rel="alternate" type="text/html"/>
       <link href="http://blog.ezelo.de/index.xml" rel="self" type="application/rss+xml"/>
       <title>on little indie little … little strange</title>
-      <updated>` + postUpdated + `</updated>
+      <updated>` + updated.Format("2006-01-02T15:04:05Z") + `</updated>
     </source>
   </entry>
 </feed>
 `
+}
+
+func atomGithubSample(updated time.Time) string {
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
+  <id>tag:github.com,2008:/breunigs/frank/commits/robust</id>
+  <link type="text/html" rel="alternate" href="https://github.com/breunigs/frank/commits/robust"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/breunigs/frank/commits/robust.atom"/>
+  <title>Recent Commits to frank:robust</title>
+  <updated>` + updated.Format("2006-01-02T15:04:05-07:00") + `</updated>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/05c498f24c791776a5c100d099abd5e4976c4af7</id>
+    <link type="text/html" rel="alternate" href="https://github.com/breunigs/frank/commit/05c498f24c791776a5c100d099abd5e4976c4af7"/>
+    <title>
+        fix appendIfMiss logic error. And actually run its tests.
+    </title>
+    <updated>` + updated.Format("2006-01-02T15:04:05-07:00") + `</updated>
+    <media:thumbnail height="30" width="30" url="https://avatars3.githubusercontent.com/u/307954?v=3&amp;s=30"/>
+    <author>
+      <name>breunigs</name>
+      <uri>https://github.com/breunigs</uri>
+    </author>
+    <content type="html">
+      &lt;pre style='white-space:pre-wrap;width:81ex'>fix appendIfMiss logic error. And actually run its tests.&lt;/pre>
+    </content>
+  </entry>
+  <entry>
+    <id>tag:github.com,2008:Grit::Commit/cfdee2b55ffb898c3449065cdbc5d6314ec03555</id>
+    <link type="text/html" rel="alternate" href="https://github.com/breunigs/frank/commit/cfdee2b55ffb898c3449065cdbc5d6314ec03555"/>
+    <title>
+        add some tests for RSS parsing to make lil&#39;sECuRE happy
+    </title>
+    <updated>` + updated.Add(-10*time.Second).Format("2006-01-02T15:04:05-07:00") + `</updated>
+    <media:thumbnail height="30" width="30" url="https://avatars3.githubusercontent.com/u/307954?v=3&amp;s=30"/>
+    <author>
+      <name>breunigs</name>
+      <uri>https://github.com/breunigs</uri>
+    </author>
+    <content type="html">
+      &lt;pre style='white-space:pre-wrap;width:81ex'>add some tests for RSS parsing to make lil&#39;sECuRE happy&lt;/pre>
+    </content>
+  </entry>
+</feed>`
 }
