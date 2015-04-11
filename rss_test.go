@@ -34,7 +34,7 @@ func TestAppendIfMiss(t *testing.T) {
 
 	x = appendIfMiss(x, "test2")
 	if len(x) != 2 {
-		t.Errorf("List should contain exactly two items")
+		t.Errorf("List should contain exactly two items, but contains: %v", x)
 	}
 
 	if x[0] != "test" {

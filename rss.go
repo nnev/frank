@@ -192,9 +192,8 @@ func pollFeedRunner(channel string, feedName string, url string) {
 func appendIfMiss(slice []string, s string) []string {
 	for _, elm := range slice {
 		if elm == s {
-			continue
+			return slice
 		}
-		return slice
 	}
 	return append(slice, s)
 }
