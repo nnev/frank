@@ -9,7 +9,6 @@ import (
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/transform"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -24,9 +23,9 @@ const cacheSize = 500
 // how many hours an entry should be considered valid
 const cacheValidHours = 24
 
-// how many kilo bytes should be considered when looking for the title
+// how many bytes should be considered when looking for the title
 // tag.
-const httpReadKByte = 100
+const httpReadByte = 1024 * 100
 
 // don’t repost the same title within this period
 const noRepostWithinSeconds = 30
@@ -174,32 +173,36 @@ func TitleGet(url string) (string, string, error) {
 	}
 	defer r.Body.Close()
 
-	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1024*httpReadKByte))
-	if err != nil {
-		log.Printf("WTF: could not read body for %s: %s", url, err)
-		body = []byte{}
-	}
+	lastUrl := r.Request.URL.String()
+	isTweet := twitterDomainRegex.MatchString(lastUrl)
 
+	body := io.LimitedReader{r.Body, httpReadByte}
+	title := titleParseHtml(&body, isTweet)
+
+	// check encoding using only already retrieved data
 	contentType := r.Header.Get("Content-Type")
-	encoding, encodingName, _ := charset.DetermineEncoding(body, contentType)
+	bytesRead := httpReadByte - body.N
+	if *verbose {
+		log.Printf("bytes read to determine title: %d", bytesRead)
+	}
+	alreadyRead := make([]byte, bytesRead)
+	body.R.Read(alreadyRead)
+	encoding, encodingName, _ := charset.DetermineEncoding(alreadyRead, contentType)
 	if encodingName != "utf-8" {
 		if *verbose {
-			log.Printf("Encoding for URL %s: %s", url, encodingName)
+			log.Printf("Encoding for URL %s: %s (%s)", url, encodingName, encoding)
 		}
 
-		fixed := transform.NewReader(bytes.NewReader(body), encoding.NewDecoder())
-		body, err = ioutil.ReadAll(fixed)
+		transTitle, _, transErr := transform.String(encoding.NewDecoder(), title)
+		if transErr != nil {
+			log.Printf("Encoding Transformation Failed: %s", transErr)
+		} else {
+			title = transTitle
+		}
 	}
-
-	title, tweet := titleParseHtml(body)
-	lastUrl := r.Request.URL.String()
 
 	if r.StatusCode != 200 {
 		return "", lastUrl, errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
-	}
-
-	if tweet != "" && twitterDomainRegex.MatchString(lastUrl) {
-		title = tweet
 	}
 
 	log.Printf("Title for URL %s: %s", url, title)
@@ -211,12 +214,8 @@ func TitleGet(url string) (string, string, error) {
 // suitable tags. Currently this is the page’s title tag and tweets
 // when the HTML-code is similar enough to twitter.com. Returns
 // title and tweet.
-func titleParseHtml(body []byte) (string, string) {
-	doc, err := html.Parse(bytes.NewReader(body))
-	if err != nil {
-		log.Printf("WTF: html parser blew up: %s", err)
-		return "", ""
-	}
+func titleParseHtml(body io.Reader, searchTweet bool) string {
+	z := html.NewTokenizer(body)
 
 	title := ""
 	tweetText := ""
@@ -224,87 +223,103 @@ func titleParseHtml(body []byte) (string, string) {
 	tweetUserScreenName := ""
 	tweetPicUrl := ""
 
-	var f func(*html.Node)
-	f = func(n *html.Node) {
-		if title == "" && n.Type == html.ElementNode && n.DataAtom == atom.Title {
-			title = extractText(n)
-			return
-		}
+	titleDepth := -1
+	tweetPermalinkDepth := -1
+	tweetTextDepth := -1
 
-		if hasClass(n, "permalink-tweet") {
-			tweetUserName = getAttr(n, "data-name")
-			tweetUserScreenName = getAttr(n, "data-screen-name")
-			// find next child “tweet-text”
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				if hasClass(c, "tweet-text") {
-					tweetText = extractText(c)
-					break
+	depth := 0
+TokenizerLoop:
+	for {
+		tt := z.Next()
+
+		switch tt {
+		case html.ErrorToken:
+			if z.Err() != io.EOF {
+				log.Printf("Could not parse HTML: %s", z.Err())
+			}
+			break TokenizerLoop
+
+		case html.TextToken:
+			text := string(z.Text())
+			if titleDepth >= 0 {
+				title += text
+			}
+			if tweetTextDepth >= 0 {
+				tweetText += text
+			}
+
+		case html.StartTagToken:
+			depth++
+
+			tn, hasAttr := z.TagName()
+
+			if bytes.Equal(tn, []byte("title")) {
+				titleDepth = depth
+				continue
+			}
+
+			if !searchTweet {
+				continue
+			}
+
+			attrs := make(map[string]string)
+			for hasAttr {
+				var key, val []byte
+				key, val, hasAttr = z.TagAttr()
+				attrs[atom.String(key)] = string(val)
+			}
+
+			if hasClass(attrs, "permalink-tweet") {
+				tweetText = ""
+				tweetUserName = attrs["data-name"]
+				tweetUserScreenName = attrs["data-screen-name"]
+				tweetPermalinkDepth = depth
+			}
+
+			if hasClass(attrs, "tweet-text") && depth > tweetPermalinkDepth {
+				tweetTextDepth = depth
+			}
+
+			isMedia := hasClass(attrs, "media") || hasClass(attrs, "media-thumbnail")
+			if tweetPicUrl == "" && isMedia && !hasClass(attrs, "profile-picture") {
+				tweetPicUrl = attrs["data-url"]
+			}
+
+		case html.EndTagToken:
+			depth--
+
+			if depth < titleDepth {
+				titleDepth = -1
+				if title != "" && !searchTweet {
+					break TokenizerLoop
 				}
 			}
-		}
 
-		isMedia := hasClass(n, "media") || hasClass(n, "media-thumbnail")
-		if tweetPicUrl == "" && isMedia && !hasClass(n, "profile-picture") {
-			attrVal := getAttr(n, "data-url")
-			if attrVal != "" {
-				tweetPicUrl = attrVal
-				return
+			if depth < tweetTextDepth {
+				tweetTextDepth = -1
+			}
+
+			if tweetText != "" && tweetUserName != "" && tweetUserScreenName != "" && tweetPicUrl != "" {
+				break TokenizerLoop
 			}
 		}
-
-		// recurse down
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
-
 	}
-	f(doc)
 
-	// cleanup
-	tweet := ""
-	tweetUser := ""
 	if tweetText != "" {
 		tweetText = twitterPicsRegex.ReplaceAllString(tweetText, "")
-		tweetUser = tweetUserName + " (@" + tweetUserScreenName + "): "
-		tweet = tweetUser + tweetText + " " + tweetPicUrl
-		tweet = clean(tweet)
-	}
-
-	return strings.TrimSpace(title), strings.TrimSpace(tweet)
-}
-
-func extractText(n *html.Node) string {
-	text := ""
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
-		if c.Type == html.TextNode {
-			text += c.Data
-		} else {
-			text += extractText(c)
+		tweetUser := tweetUserName + " (@" + tweetUserScreenName + "): "
+		if tweet := clean(tweetUser + tweetText + " " + tweetPicUrl); tweet != "" {
+			return tweet
 		}
 	}
-	return clean(text)
+
+	return clean(title)
 }
 
-func hasClass(n *html.Node, class string) bool {
-	if n.Type != html.ElementNode {
-		return false
-	}
-
+func hasClass(attrs map[string]string, class string) bool {
+	classes := strings.Replace(attrs["class"], "\n", " ", -1)
 	class = " " + strings.TrimSpace(class) + " "
-	attr := strings.Replace(getAttr(n, "class"), "\n", " ", -1)
-	if strings.Contains(" "+attr+" ", class) {
-		return true
-	}
-	return false
-}
-
-func getAttr(n *html.Node, findAttr string) string {
-	for _, attr := range n.Attr {
-		if attr.Key == findAttr {
-			return attr.Val
-		}
-	}
-	return ""
+	return strings.Contains(" "+classes+" ", class)
 }
 
 // Cache ///////////////////////////////////////////////////////////////
