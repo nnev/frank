@@ -2,10 +2,32 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestPDFTitleGet(t *testing.T) {
+	var files = make(map[string]string)
+	files["samples/nada.pdf"] = ""
+	files["samples/yes.pdf"] = "TITLE by AUTHOR"
+
+	for filepath, expected := range files {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			buf, _ := ioutil.ReadFile(filepath)
+			fmt.Fprintln(w, string(buf))
+		}))
+		defer ts.Close()
+
+		title := PDFTitleGet(ts.URL)
+		if title != expected {
+			t.Errorf("TestPDFTitleGet(%v)\n GOT: %v\nWANT: %v", "from", title, expected)
+		}
+	}
+}
 
 func TestExtract(t *testing.T) {
 	var msgs = make(map[string][]string)

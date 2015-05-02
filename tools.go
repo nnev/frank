@@ -116,3 +116,8 @@ func IsIn(needle string, haystack []string) bool {
 	}
 	return false
 }
+
+func clean(text string) string {
+	text = whitespaceRegex.ReplaceAllString(text, " ")
+	return strings.TrimSpace(text)
+}

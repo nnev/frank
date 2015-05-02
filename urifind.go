@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"code.google.com/p/go.net/html"
 	_ "crypto/sha512"
@@ -23,9 +24,9 @@ const cacheSize = 500
 // how many hours an entry should be considered valid
 const cacheValidHours = 24
 
-// how many bytes should be considered when looking for the title
-// tag.
+// how many bytes should be considered when looking for the title tag.
 const httpReadByte = 1024 * 100
+const httpReadBytePDF = 1024 * 1024 * 3 // 3 MB
 
 // don’t repost the same title within this period
 const noRepostWithinSeconds = 30
@@ -41,6 +42,11 @@ var twitterDomainRegex = regexp.MustCompile(`(?i)^https?://(?:[a-z0-9]\.)?twitte
 var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9]+(?:\b|$)`)
 
 var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) spoiler`)
+
+// extract data from a PDF's document information dictionary
+var pdfAuthorRegex = regexp.MustCompile(`/Author\(([^)]+?)\)`)
+var pdfTitleRegex = regexp.MustCompile(`/Title\(([^)]+?)\)`)
+var pdfSubjectRegex = regexp.MustCompile(`/Subject\(([^)]+?)\)`)
 
 // blacklist pointless titles /////////////////////////////////////////
 var pointlessTitles = []string{"",
@@ -104,10 +110,13 @@ func runnerUrifind(parsed Message) {
 			}
 
 			log.Printf("testing URL: %s", url)
-			title, _, err := TitleGet(url)
-			if err != nil {
-				//postTitle(conn, line, err.Error(), "Error")
-			} else if !IsIn(title, pointlessTitles) {
+			title := ""
+			if strings.HasSuffix(strings.ToLower(url), ".pdf") {
+				title = PDFTitleGet(url)
+			} else {
+				title, _, _ = TitleGet(url)
+			}
+			if !IsIn(title, pointlessTitles) {
 				postTitle(parsed, title, "")
 				cacheAdd(url, title)
 			}
@@ -159,6 +168,74 @@ func extract(msg string) []string {
 		msg = msg[idx+len(url):]
 	}
 	return results
+}
+
+// PDF stuff ///////////////////////////////////////////////////////////
+
+func PDFTitleGet(url string) string {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Coding error in PDFTitleGet: %v", r)
+		}
+	}()
+
+	c := http.Client{Timeout: 10 * time.Second}
+
+	r, err := c.Get(url)
+	if err != nil {
+		log.Printf("WTF: could not resolve %s: %s", url, err)
+		return ""
+	}
+	defer r.Body.Close()
+
+	reader := bufio.NewReader(io.LimitReader(r.Body, httpReadBytePDF))
+
+	author := ""
+	title := ""
+
+	inDictionary := false
+	cnt := 0
+	for {
+		cnt++
+		line, err := reader.ReadString('\n')
+
+		if err == io.EOF {
+			break
+		}
+
+		// PDF 32000-1:2008 -- 7.3.7 Dictionary Objects
+		if strings.HasPrefix(line, "<<") {
+			inDictionary = true
+		}
+
+		if inDictionary {
+			if m := pdfAuthorRegex.FindStringSubmatch(line); len(m) == 2 {
+				author = clean(m[1])
+			}
+
+			if m := pdfTitleRegex.FindStringSubmatch(line); len(m) == 2 {
+				title = clean(m[1])
+			}
+
+			if m := pdfSubjectRegex.FindStringSubmatch(line); len(m) == 2 && title == "" {
+				title = clean(m[1])
+			}
+		}
+
+		if strings.HasPrefix(line, ">>") || strings.HasSuffix(line, ">>") {
+			inDictionary = false
+		}
+	}
+
+	if title == "" {
+		return ""
+	}
+
+	if author == "" {
+		return title
+	} else {
+		return title + " by " + author
+	}
 }
 
 // http/html stuff /////////////////////////////////////////////////////
@@ -397,9 +474,4 @@ func postTitle(parsed Message, title string, prefix string) {
 	// configure their client to not highlight them on notices will
 	// complain.
 	Privmsg(tgt, "["+prefix+"] "+title)
-}
-
-func clean(text string) string {
-	text = whitespaceRegex.ReplaceAllString(text, " ")
-	return strings.TrimSpace(text)
 }
