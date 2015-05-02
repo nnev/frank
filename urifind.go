@@ -176,18 +176,12 @@ func TitleGet(url string) (string, string, error) {
 	lastUrl := r.Request.URL.String()
 	isTweet := twitterDomainRegex.MatchString(lastUrl)
 
-	body := io.LimitedReader{r.Body, httpReadByte}
-	title := titleParseHtml(&body, isTweet)
+	var alreadyRead bytes.Buffer
+	limited := io.LimitedReader{r.Body, httpReadByte}
+	title := titleParseHtml(io.TeeReader(&limited, &alreadyRead), isTweet)
 
-	// check encoding using only already retrieved data
 	contentType := r.Header.Get("Content-Type")
-	bytesRead := httpReadByte - body.N
-	if *verbose {
-		log.Printf("bytes read to determine title: %d", bytesRead)
-	}
-	alreadyRead := make([]byte, bytesRead)
-	body.R.Read(alreadyRead)
-	encoding, encodingName, _ := charset.DetermineEncoding(alreadyRead, contentType)
+	encoding, encodingName, _ := charset.DetermineEncoding(alreadyRead.Bytes(), contentType)
 	if encodingName != "utf-8" {
 		if *verbose {
 			log.Printf("Encoding for URL %s: %s (%s)", url, encodingName, encoding)
