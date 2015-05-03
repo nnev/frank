@@ -181,9 +181,15 @@ func PDFTitleGet(url string) string {
 		}
 	}()
 
-	c := http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("WTF: could not make http request %s: %s", url, err)
+		return ""
+	}
+	req.Header.Set("User-Agent", "frank IRC Bot")
 
-	r, err := c.Get(url)
+	c := http.Client{Timeout: 10 * time.Second}
+	r, err := c.Do(req)
 	if err != nil {
 		log.Printf("WTF: could not resolve %s: %s", url, err)
 		return ""
@@ -243,9 +249,15 @@ func PDFTitleGet(url string) string {
 // http/html stuff /////////////////////////////////////////////////////
 
 func TitleGet(url string) (string, string, error) {
-	c := http.Client{Timeout: 10 * time.Second}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("WTF: could not make http request %s: %s", url, err)
+		return "", url, err
+	}
+	req.Header.Set("User-Agent", "frank IRC Bot")
 
-	r, err := c.Get(url)
+	c := http.Client{Timeout: 10 * time.Second}
+	r, err := c.Do(req)
 	if err != nil {
 		log.Printf("WTF: could not resolve %s: %s", url, err)
 		return "", url, err
