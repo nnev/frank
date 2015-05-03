@@ -268,24 +268,12 @@ func TitleGet(url string) (string, string, error) {
 	isTweet := twitterDomainRegex.MatchString(lastUrl)
 	isGithub := githubDomainRegex.MatchString(lastUrl)
 
-	var alreadyRead bytes.Buffer
-	limited := io.LimitedReader{r.Body, httpReadByte}
-	title := titleParseHtml(io.TeeReader(&limited, &alreadyRead), isTweet || isGithub)
-
 	contentType := r.Header.Get("Content-Type")
-	encoding, encodingName, _ := charset.DetermineEncoding(alreadyRead.Bytes(), contentType)
-	if encodingName != "utf-8" {
-		if *verbose {
-			log.Printf("Encoding for URL %s: %s (%s)", url, encodingName, encoding)
-		}
+	encoding, _, _ := charset.DetermineEncoding(nil, contentType)
+	reader := transform.NewReader(r.Body, encoding.NewDecoder())
 
-		transTitle, _, transErr := transform.String(encoding.NewDecoder(), title)
-		if transErr != nil {
-			log.Printf("Encoding Transformation Failed: %s", transErr)
-		} else {
-			title = transTitle
-		}
-	}
+	limited := io.LimitedReader{reader, httpReadByte}
+	title := titleParseHtml(&limited, isTweet || isGithub)
 
 	if r.StatusCode != 200 {
 		return "", lastUrl, errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
