@@ -38,6 +38,8 @@ var whitespaceRegex = regexp.MustCompile(`[\s\0\p{Cf}\p{Cc}]+`)
 
 var ignoreDomainsRegex = regexp.MustCompile(`^http://p\.nnev\.de`)
 
+var githubDomainRegex = regexp.MustCompile(`(?i)^https?://(?:[a-z0-9]\.)?github.com`)
+
 var twitterDomainRegex = regexp.MustCompile(`(?i)^https?://(?:[a-z0-9]\.)?twitter.com`)
 var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9]+(?:\b|$)`)
 
@@ -252,10 +254,11 @@ func TitleGet(url string) (string, string, error) {
 
 	lastUrl := r.Request.URL.String()
 	isTweet := twitterDomainRegex.MatchString(lastUrl)
+	isGithub := githubDomainRegex.MatchString(lastUrl)
 
 	var alreadyRead bytes.Buffer
 	limited := io.LimitedReader{r.Body, httpReadByte}
-	title := titleParseHtml(io.TeeReader(&limited, &alreadyRead), isTweet)
+	title := titleParseHtml(io.TeeReader(&limited, &alreadyRead), isTweet || isGithub)
 
 	contentType := r.Header.Get("Content-Type")
 	encoding, encodingName, _ := charset.DetermineEncoding(alreadyRead.Bytes(), contentType)
@@ -285,10 +288,13 @@ func TitleGet(url string) (string, string, error) {
 // suitable tags. Currently this is the page’s title tag and tweets
 // when the HTML-code is similar enough to twitter.com. Returns
 // title and tweet.
-func titleParseHtml(body io.Reader, searchTweet bool) string {
+func titleParseHtml(body io.Reader, detailedSearch bool) string {
 	z := html.NewTokenizer(body)
 
 	title := ""
+
+	githubDesc := ""
+
 	tweetText := ""
 	tweetUserName := ""
 	tweetUserScreenName := ""
@@ -297,6 +303,7 @@ func titleParseHtml(body io.Reader, searchTweet bool) string {
 	titleDepth := -1
 	tweetPermalinkDepth := -1
 	tweetTextDepth := -1
+	githubDescDepth := -1
 
 	depth := 0
 TokenizerLoop:
@@ -318,6 +325,9 @@ TokenizerLoop:
 			if tweetTextDepth >= 0 {
 				tweetText += text
 			}
+			if githubDescDepth >= 0 {
+				githubDesc += text
+			}
 
 		case html.StartTagToken:
 			depth++
@@ -329,7 +339,7 @@ TokenizerLoop:
 				continue
 			}
 
-			if !searchTweet {
+			if !detailedSearch {
 				continue
 			}
 
@@ -338,6 +348,10 @@ TokenizerLoop:
 				var key, val []byte
 				key, val, hasAttr = z.TagAttr()
 				attrs[atom.String(key)] = string(val)
+			}
+
+			if bytes.Equal(tn, []byte("div")) && attrs["class"] == "repository-description" {
+				githubDescDepth = depth
 			}
 
 			if hasClass(attrs, "permalink-tweet") {
@@ -361,7 +375,14 @@ TokenizerLoop:
 
 			if depth < titleDepth {
 				titleDepth = -1
-				if title != "" && !searchTweet {
+				if title != "" && !detailedSearch {
+					break TokenizerLoop
+				}
+			}
+
+			if depth < githubDescDepth {
+				githubDescDepth = -1
+				if githubDesc != "" {
 					break TokenizerLoop
 				}
 			}
@@ -374,6 +395,10 @@ TokenizerLoop:
 				break TokenizerLoop
 			}
 		}
+	}
+
+	if githubDesc != "" {
+		return clean(githubDesc)
 	}
 
 	if tweetText != "" {

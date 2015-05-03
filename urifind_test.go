@@ -62,6 +62,8 @@ func TestTitleGet(t *testing.T) {
 	samples["https://twitter.com/thejeremyvine/status/433607774375649280"] = "(@theJeremyVine): The internet was invented so someone could ask this question - and get an answer: https://pbs.twimg.com/media/BgR7-TQCIAAE4fm.jpg:large"
 	samples["http://twitter.com/thejeremyvine/status/433607774375649280"] = "(@theJeremyVine): The internet was invented so someone could ask this question - and get an answer: https://pbs.twimg.com/media/BgR7-TQCIAAE4fm.jpg:large"
 	samples["http://www.spiegel.de/schulspiegel/abi/abitur-schueler-beantragt-klausur-nach-informationsfreiheitsgesetz-a-1027298.html"] = "Abitur: Schüler beantragt Klausur nach Informationsfreiheitsgesetz - SPIEGEL ONLINE"
+	samples["https://github.com/breunigs/frank"] = "Frank is an IRC-Bot written in Go. It’s my pet project to learn Go and specifically tailored to my needs."
+	samples["https://github.com/breunigs/python-librtmp-debian"] = "breunigs/python-librtmp-debian · GitHub"
 
 	for url, title := range samples {
 		x, _, _ := TitleGet(url)
