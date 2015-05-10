@@ -268,12 +268,19 @@ func TitleGet(url string) (string, string, error) {
 	isTweet := twitterDomainRegex.MatchString(lastUrl)
 	isGithub := githubDomainRegex.MatchString(lastUrl)
 
-	contentType := r.Header.Get("Content-Type")
-	encoding, _, _ := charset.DetermineEncoding(nil, contentType)
-	reader := transform.NewReader(r.Body, encoding.NewDecoder())
+	limited := io.LimitedReader{r.Body, httpReadByte}
+	head := make([]byte, 1024)
+	if _, err := limited.Read(head); err != nil {
+		log.Printf("Could not read from %s: %s", url, err)
+		return "", url, err
+	}
+	reader := io.MultiReader(bytes.NewReader(head), &limited)
 
-	limited := io.LimitedReader{reader, httpReadByte}
-	title := titleParseHtml(&limited, isTweet || isGithub)
+	contentType := r.Header.Get("Content-Type")
+	encoding, _, _ := charset.DetermineEncoding(head, contentType)
+	reader = transform.NewReader(reader, encoding.NewDecoder())
+
+	title := titleParseHtml(reader, isTweet || isGithub)
 
 	if r.StatusCode != 200 {
 		return "", lastUrl, errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
