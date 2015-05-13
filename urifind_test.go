@@ -53,6 +53,7 @@ func TestExtract(t *testing.T) {
 
 func TestTitleGet(t *testing.T) {
 	var samples = make(map[string]string)
+	samples["https://twitter.com/meganfinger/status/444586462076346368"] = "Megan Finger (@meganfinger): THANK YOU Central for my awesome email address and username...... Like really https://pbs.twimg.com/media/Bit9CBQCYAAYv_-.jpg:large"
 	samples["https://twitter.com/dave_tucker/status/400269131255390210"] = "Dave Tucker (@dave_tucker): This morning the wife asked “Why is your phone issuing you death threats?”. Me: “Oh it’s just my new alarm clock” /cc @CARROT_app"
 	samples["http://twitter.com/dave_tucker/status/400269131255390210"] = "(@dave_tucker): This morning the wife asked “Why is your phone issuing you death threats?”. Me: “Oh it’s just my new alarm clock” /cc @CARROT_app"
 	samples["https://twitter.com/Perspective_pic/status/400356645504831489/photo/1"] = "Perspective Pictures (@Perspective_pic): Sorry but this without a doubt the greatest thing ever seen on an air duct https://pbs.twimg.com/media/BY5aP2RIQAAWPl1.jpg:large"

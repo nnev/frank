@@ -316,6 +316,14 @@ func titleParseHtml(body io.Reader, detailedSearch bool) string {
 TokenizerLoop:
 	for {
 		tt := z.Next()
+		tn, hasAttr := z.TagName()
+
+		if bytes.Equal(tn, []byte("img")) {
+			// skip tags that are likely not to be closed. E.g. <img src="asd"> would
+			// permanently increase the depth by one and thus break the simple logic
+			// below.
+			continue
+		}
 
 		switch tt {
 		case html.ErrorToken:
@@ -338,8 +346,6 @@ TokenizerLoop:
 
 		case html.StartTagToken:
 			depth++
-
-			tn, hasAttr := z.TagName()
 
 			if bytes.Equal(tn, []byte("title")) {
 				titleDepth = depth
@@ -368,7 +374,7 @@ TokenizerLoop:
 				tweetPermalinkDepth = depth
 			}
 
-			if hasClass(attrs, "tweet-text") && depth > tweetPermalinkDepth {
+			if hasClass(attrs, "tweet-text") && depth > tweetPermalinkDepth && tweetPermalinkDepth > -1 {
 				tweetTextDepth = depth
 			}
 
@@ -378,29 +384,29 @@ TokenizerLoop:
 			}
 
 		case html.EndTagToken:
-			depth--
-
-			if depth < titleDepth {
+			if depth <= titleDepth {
 				titleDepth = -1
 				if title != "" && !detailedSearch {
 					break TokenizerLoop
 				}
 			}
 
-			if depth < githubDescDepth {
+			if depth <= githubDescDepth {
 				githubDescDepth = -1
 				if githubDesc != "" {
 					break TokenizerLoop
 				}
 			}
 
-			if depth < tweetTextDepth {
+			if depth <= tweetTextDepth {
 				tweetTextDepth = -1
 			}
 
 			if tweetText != "" && tweetUserName != "" && tweetUserScreenName != "" && tweetPicUrl != "" {
 				break TokenizerLoop
 			}
+
+			depth--
 		}
 	}
 
