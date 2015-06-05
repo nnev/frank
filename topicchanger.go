@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"log"
@@ -19,6 +20,8 @@ const SEPARATOR = "|"
 // I would prefer 🕖, but it’s not available in most fonts
 const ROBOT_BLOCK_IDENTIFIER = "ꜰ"
 
+var lastFailureWarning = time.Unix(0, 0)
+
 var regexTomorrow = regexp.MustCompile(`(?i)\smorgen:?\s`)
 var regexToday = regexp.MustCompile(`(?i)\sheute:?\s`)
 
@@ -33,7 +36,11 @@ func TopicChanger() {
 func setTopic(channel string) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("most likely coding error: %v", r)
+			log.Printf("topicchanger error: %v", r)
+			if time.Since(lastFailureWarning) >= time.Hour {
+				Privmsg(channel, fmt.Sprintf("failed to retrieve topic: %v", r))
+				lastFailureWarning = time.Now()
+			}
 		}
 	}()
 
@@ -147,7 +154,7 @@ var getNextEvent = func() *event {
 	db, err := sqlx.Connect("postgres", "dbname=nnev user=anon host=/var/run/postgresql sslmode=disable")
 	if err != nil {
 		log.Println(err)
-		return nil
+		panic(err)
 	}
 
 	defer db.Close()
@@ -164,7 +171,7 @@ var getNextEvent = func() *event {
 
 	if err != nil {
 		log.Println(err)
-		return nil
+		panic(err)
 	}
 
 	if *verbose {
@@ -178,10 +185,6 @@ var getNextEvent = func() *event {
 // single string in human readable form
 func getNextEventString() string {
 	evt := getNextEvent()
-	if evt == nil {
-		return "SQL Error, see logs"
-	}
-
 	t := evt.Date.Format("2006-01-02") + ": "
 
 	if toStr(evt.Override) != "" {
