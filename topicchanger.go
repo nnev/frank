@@ -51,7 +51,6 @@ func setTopic(channel string) {
 	}
 
 	newtopic := insertNextEvent(topic)
-	newtopic = advanceDates(newtopic)
 
 	if topic == newtopic {
 		return
@@ -61,49 +60,6 @@ func setTopic(channel string) {
 	log.Printf("%s NEW TOPIC: %s", channel, newtopic)
 
 	Topic(channel, newtopic)
-}
-
-func advanceDates(topic string) string {
-	parts := splitTopic(topic)
-	new := []string{}
-
-	dateToday := time.Now()
-	dateTomorrow := time.Now().AddDate(0, 0, 1)
-
-	for _, part := range parts {
-		if strings.Contains(part, dateToday.Format("2006-01-02")) {
-			part = strings.Replace(part, dateToday.Format("2006-01-02"), "HEUTE ("+dateToday.Format("02.Jan")+")", -1)
-			new = append(new, part)
-
-		} else if strings.Contains(part, dateTomorrow.Format("2006-01-02")) {
-			part = strings.Replace(part, dateTomorrow.Format("2006-01-02"), "MORGEN ("+dateTomorrow.Format("02.Jan")+")", -1)
-			new = append(new, part)
-
-		} else if regexTomorrow.MatchString(part) {
-			// tomorrow → today
-			match := regexTomorrow.FindStringSubmatch(part)[0]
-			r := " heute"
-			if strings.HasSuffix(match, ": ") {
-				r += ":"
-			}
-			r += " "
-
-			if strings.HasPrefix(match, " MOR") {
-				r = strings.ToUpper(r)
-			}
-
-			n := regexTomorrow.ReplaceAllString(part, r)
-			new = append(new, n)
-
-		} else if regexToday.MatchString(part) {
-			// today → (remove)
-
-		} else {
-			// keep
-			new = append(new, part)
-		}
-	}
-	return joinTopic(new)
 }
 
 func insertNextEvent(topic string) string {
@@ -185,7 +141,23 @@ var getNextEvent = func() *event {
 // single string in human readable form
 func getNextEventString() string {
 	evt := getNextEvent()
-	t := evt.Date.Format("2006-01-02") + ": "
+
+	t := ""
+
+	date := evt.Date.Format("2006-01-02")
+	dateToday := time.Now().Format("2006-01-02")
+	dateTomorrow := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+
+	switch date {
+	case dateToday:
+		t += "HEUTE (" + evt.Date.Format("02.Jan") + ")"
+	case dateTomorrow:
+		t += "MORGEN (" + evt.Date.Format("02.Jan") + ")"
+	default:
+		t += date
+	}
+
+	t += ": "
 
 	if toStr(evt.Override) != "" {
 		t += "Ausnahmsweise: " + toStr(evt.Override)
