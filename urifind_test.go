@@ -62,6 +62,7 @@ func TestTitleGet(t *testing.T) {
 	samples["https://twitter.com/rechelon/status/431242278221275137"] = "(@rechelon): @SebastosPublius @jfsmith23 Yep. Godesky had gathered a large following back then and was more sane than Zerzan & less terrible than Jensen."
 	samples["https://twitter.com/thejeremyvine/status/433607774375649280"] = "(@theJeremyVine): The internet was invented so someone could ask this question - and get an answer: https://pbs.twimg.com/media/BgR7-TQCIAAE4fm.jpg:large"
 	samples["http://twitter.com/thejeremyvine/status/433607774375649280"] = "(@theJeremyVine): The internet was invented so someone could ask this question - and get an answer: https://pbs.twimg.com/media/BgR7-TQCIAAE4fm.jpg:large"
+	samples["https://twitter.com/bhalp1/status/578925947245633536"] = "Ben Halpern (@bhalp1): Sometimes when I'm writing Javascript I want to throw up my hands and say \"this is bullshit!\" but I can never remember what \"this\" refers to"
 	samples["http://www.spiegel.de/schulspiegel/abi/abitur-schueler-beantragt-klausur-nach-informationsfreiheitsgesetz-a-1027298.html"] = "Abitur: Schüler beantragt Klausur nach Informationsfreiheitsgesetz - SPIEGEL ONLINE"
 	samples["https://github.com/breunigs/frank"] = "Frank is an IRC-Bot written in Go. It’s my pet project to learn Go and specifically tailored to my needs."
 	samples["https://github.com/breunigs/python-librtmp-debian"] = "breunigs/python-librtmp-debian · GitHub"

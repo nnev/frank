@@ -402,7 +402,8 @@ TokenizerLoop:
 				tweetTextDepth = -1
 			}
 
-			if tweetText != "" && tweetUserName != "" && tweetUserScreenName != "" && tweetPicUrl != "" {
+			if depth <= tweetPermalinkDepth {
+				tweetPermalinkDepth = -1
 				break TokenizerLoop
 			}
 
