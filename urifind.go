@@ -3,9 +3,9 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"code.google.com/p/go.net/html"
 	_ "crypto/sha512"
 	"errors"
+	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/transform"
