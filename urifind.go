@@ -31,6 +31,8 @@ const httpReadBytePDF = 1024 * 1024 * 3 // 3 MB
 // don’t repost the same title within this period
 const noRepostWithinSeconds = 30
 
+const titleMaxAllowedLength = 500
+
 // matches all whitespace and zero bytes. Additionally, all Unicode
 // characters of class Cf (format chars, e.g. right-to-left) and Cc
 // (control chars) are matched.
@@ -281,6 +283,10 @@ func TitleGet(url string) (string, string, error) {
 	reader = transform.NewReader(reader, encoding.NewDecoder())
 
 	title := titleParseHtml(reader, isTweet || isGithub)
+
+	if len(title) > titleMaxAllowedLength {
+		title = title[:titleMaxAllowedLength]
+	}
 
 	if r.StatusCode != 200 {
 		return "", lastUrl, errors.New("[" + strconv.Itoa(r.StatusCode) + "] " + title)
