@@ -270,13 +270,16 @@ func TitleGet(url string) (string, string, error) {
 	isTweet := twitterDomainRegex.MatchString(lastUrl)
 	isGithub := githubDomainRegex.MatchString(lastUrl)
 
-	limited := io.LimitedReader{r.Body, httpReadByte}
 	head := make([]byte, 1024)
-	if _, err := limited.Read(head); err != nil {
+
+	bytesRead, err := io.ReadFull(r.Body, head)
+	if err != nil && err != io.ErrUnexpectedEOF {
 		log.Printf("Could not read from %s: %s", url, err)
 		return "", url, err
 	}
-	reader := io.MultiReader(bytes.NewReader(head), &limited)
+
+	limited := io.LimitedReader{r.Body, int64(httpReadByte - bytesRead)}
+	reader := io.MultiReader(bytes.NewReader(head[:bytesRead]), &limited)
 
 	contentType := r.Header.Get("Content-Type")
 	encoding, _, _ := charset.DetermineEncoding(head, contentType)

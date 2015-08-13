@@ -68,6 +68,7 @@ func TestTitleGet(t *testing.T) {
 	samples["https://github.com/breunigs/python-librtmp-debian"] = "breunigs/python-librtmp-debian · GitHub"
 	samples["http://forum.xda-developers.com/xposed/modules/mod-rootcloak-completely-hide-root-t2574647"] = "[MOD][XPOSED][4.0+] RootCloak - Completely H… | Xposed General | XDA Forums"
 	samples["https://code.facebook.com/posts/1433093613662262/-under-the-hood-facebook-s-cold-storage-system-"] = "Under the hood: Facebook’s cold storage system | Engineering Blog | Facebook Code | Facebook"
+	samples["http://genius.cat-v.org/rob-pike/"] = "Rob Pike"
 
 	for url, title := range samples {
 		x, _, _ := TitleGet(url)
