@@ -183,6 +183,11 @@ func PDFTitleGet(url string) string {
 		}
 	}()
 
+	gTitle, _, gErr := TitleGet("https://webcache.googleusercontent.com/search?q=cache:" + url)
+	if gErr == nil && len(gTitle) > 0 {
+		return gTitle
+	}
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("WTF: could not make http request %s: %s", url, err)
