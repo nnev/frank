@@ -2,11 +2,11 @@ package frank
 
 import (
 	"code.google.com/p/go.net/html"
-	"code.google.com/p/go.net/html/atom"
 	_ "crypto/sha512"
 	"errors"
 	frankconf "github.com/breunigs/frank/config"
 	irc "github.com/fluffle/goirc/client"
+	"golang.org/x/net/html/atom"
 	"io"
 	"log"
 	"regexp"
@@ -54,8 +54,7 @@ var pointlessTitles = []string{"",
 	"Nopaste - powered by project-mindstorm IT Services",
 	"Diff NoName e.V. pastebin",
 	"pr0gramm.com",
-	"Go Playground",
-	"Google" }
+	"Google"}
 
 func isIn(needle string, haystack []string) bool {
 	for _, s := range haystack {
@@ -354,7 +353,7 @@ func postTitle(conn *irc.Conn, line *irc.Line, title string, prefix string) {
 		return
 	}
 
-	if frankconf.Debug {
+	if frankconf.Verbose {
 		log.Printf("Title was last posted: %#v (“%s”)", secondsAgo, title)
 	}
 

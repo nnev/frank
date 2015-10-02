@@ -3,15 +3,44 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"log"
+	"os"
+	"strings"
+
 	frankconf "github.com/breunigs/frank/config"
 	"github.com/breunigs/frank/frank"
 	irc "github.com/fluffle/goirc/client"
-	"log"
-	"strings"
+	"github.com/fluffle/goirc/logging"
 )
+
+// goirc does not use the stdlibs log-interface for some reason, so we wrap it
+type ircLogger struct {
+	*log.Logger
+}
+
+func (l ircLogger) Debug(format string, args ...interface{}) {
+	if frankconf.Verbose {
+		return
+	}
+	l.Printf("[DEBUG] "+format, args...)
+}
+
+func (l ircLogger) Error(format string, args ...interface{}) {
+	l.Printf("[ERROR] "+format, args...)
+}
+
+func (l ircLogger) Info(format string, args ...interface{}) {
+	l.Printf("[INFO] "+format, args...)
+}
+
+func (l ircLogger) Warn(format string, args ...interface{}) {
+	l.Printf("[WARN] "+format, args...)
+}
 
 func main() {
 	flag.Parse() // parses the logging flags. TODO
+
+	logging.SetLogger(ircLogger{log.New(os.Stdout, "[irc]", log.LstdFlags)})
 
 	cfg := irc.NewConfig(frankconf.BotNick, frankconf.BotNick, "Frank Böterrich der Zweite")
 	cfg.SSL = true
@@ -32,7 +61,7 @@ func main() {
 			if frankconf.Production {
 				instaJoin = frankconf.InstaJoinProduction
 			} else {
-				instaJoin = frankconf.InstaJoinDebug
+				instaJoin = frankconf.InstaJoinTesting
 			}
 
 			log.Printf("AutoJoining: %s\n", instaJoin)
@@ -66,15 +95,9 @@ func main() {
 			go frank.Help(conn, line)
 			go frank.ItsAlive(conn, line)
 			go frank.Highlight(conn, line)
-
-			if frankconf.Debug {
-				tgt := line.Args[0]
-				msg := line.Args[1]
-				log.Printf("Debug MSG: tgt: %s, msg: %s\n", tgt, msg)
-			}
 		})
 
-	if frankconf.Debug {
+	if frankconf.Verbose {
 		c.HandleFunc("NOTICE",
 			func(conn *irc.Conn, line *irc.Line) {
 				tgt := line.Args[0]
@@ -88,7 +111,7 @@ func main() {
 			tgt := line.Args[0]
 			cnnl := line.Args[1]
 
-			// auto follow invites only in debug mode or if asked by master
+			// auto follow invites only in test mode or if asked by master
 			if frankconf.Production && line.Nick != frankconf.Master {
 				log.Printf("only following invites by %s in production\n", frankconf.Master)
 				return
@@ -131,7 +154,7 @@ func main() {
 
 					if strings.Contains(" "+frankconf.OpOkIn+" ", " "+channel+" ") {
 						if strings.ToLower(line.Nick) != "chanserv" {
-							conn.Privmsg(channel, "Unbelievable "+line.Nick+", you… http://yrden.de/f1.ogg")
+							conn.Privmsg(channel, "Unbelievable "+line.Nick+", you… https://yrden.de/f1.ogg")
 						}
 					} else {
 						conn.Mode(channel, "+v-o", conn.Me().Nick, conn.Me().Nick)
@@ -151,7 +174,7 @@ func main() {
 
 	// go go GO!
 	if err := c.Connect(); err != nil {
-		log.Printf("Connection error: %s\n", err)
+		log.Fatalf("Connection error: %s\n", err)
 	}
 
 	log.Printf("Frank has booted\n")
