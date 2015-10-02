@@ -13,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"gopkg.in/fsnotify.v1"
+	"path/filepath"
+	"io/ioutil"
 )
 
 // how many URLs can the cache store
@@ -28,6 +31,9 @@ const httpReadKByte = 100
 // don’t repost the same title within this period
 const noRepostWithinSeconds = 30
 
+// pointless titles that need not to be posted as they don't contain useful info
+var pointlessTitlesFile = "pointlessTitles"
+
 // matches all whitespace and zero bytes. Additionally, all Unicode
 // characters of class Cf (format chars, e.g. right-to-left) and Cc
 // (control chars) are matched.
@@ -40,21 +46,55 @@ var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9
 
 var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) spoiler`)
 
+func init() {
+	go updatePointlessTitles()
+}
+
 // blacklist pointless titles /////////////////////////////////////////
-var pointlessTitles = []string{"",
-	"imgur: the simple image sharer",
-	"Fefes Blog",
-	"Gmane Loom",
-	"i3 - A better tiling and dynamic window manager",
-	"i3 - improved tiling wm",
-	"IT-News, c't, iX, Technology Review, Telepolis | heise online",
-	"debian Pastezone",
-	"Index of /docs/",
-	"NoName e.V. pastebin",
-	"Nopaste - powered by project-mindstorm IT Services",
-	"Diff NoName e.V. pastebin",
-	"pr0gramm.com",
-	"Google"}
+var pointlessTitles = readPointlessTitles(pointlessTitlesFile)
+
+func readPointlessTitles(filename string) []string {
+	fcontent, err := ioutil.ReadFile(filename)
+	if err != nil {
+		log.Printf("error reading pointless titles from file '%s': %s", pointlessTitlesFile, err)
+		return []string{""}
+	}
+	sliced := strings.Split(string(fcontent), "\n")
+
+	// strip leading or trailing whitespaces
+	for i, title := range sliced {
+		sliced[i] = strings.TrimSpace(title)
+	}
+
+	// empty titles are definitely uninteresting as heck
+	sliced = append(sliced, "")
+
+	return sliced
+}
+
+func updatePointlessTitles() {
+	fswatcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	fswatcher.Add(filepath.Dir(pointlessTitlesFile))
+
+	defer fswatcher.Close()
+
+	for {
+		select {
+		case event := <-fswatcher.Events:
+			if event.Op&fsnotify.Write == fsnotify.Write {
+				if strings.HasSuffix(event.Name, filepath.Base(pointlessTitlesFile)) {
+					pointlessTitles = readPointlessTitles(pointlessTitlesFile)
+				}
+			}
+		case err := <-fswatcher.Errors:
+			log.Printf("WTF? watcher-error: %s", err)
+		}
+	}
+}
 
 func isIn(needle string, haystack []string) bool {
 	for _, s := range haystack {
