@@ -101,3 +101,36 @@ func TestCache(t *testing.T) {
 		t.Errorf("Cache did not calculate correct amount of seconds since post. Got: %s, Expected: 1s", secs)
 	}
 }
+
+func TestReadPointlessTitles(t *testing.T) {
+	titles := readPointlessTitles("frank/fixtures/pointlessTitles")
+	ref := []string{"foo", "bar", "ba az", ""}
+
+
+	if titles == nil { 
+		t.Errorf("function returned nil")
+	}
+
+	if len(titles) != len(ref) {
+		t.Errorf("mismatch in parsed slice-length. Got: %s, expected: %s", titles, ref)
+
+		allFine := true
+		for i := range ref {
+			if titles[i] != ref[i] {
+				allFine = false
+			}
+		}
+
+		if !allFine {
+			t.Errorf("Parsing pointlessTitles-fixture failed. Got: %s, expected %s", titles, ref)
+		}
+	}
+}
+
+func TestIsIn(t *testing.T) {
+	ref := []string{"foo", "bar", "ba az", ""}
+
+	if !isIn("bar", ref) {
+		t.Errorf("isIn didn't find 'bar' in []string with 'bar' in it.")
+	}
+}
