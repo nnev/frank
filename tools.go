@@ -84,6 +84,14 @@ func Nick(p Message) string {
 	return strings.SplitN(p.Prefix, "!", 2)[0]
 }
 
+func Hostmask(p Message) string {
+	split := strings.SplitN(p.Prefix, "!", 2)
+	if len(split) < 2 {
+		return ""
+	}
+	return split[1]
+}
+
 func Target(parsed Message) string {
 	p := parsed.Params
 	if len(p) == 0 {

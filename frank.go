@@ -3,14 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
-	parser "github.com/husio/irc"
-	"github.com/robustirc/bridge/robustsession"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
+
+	parser "github.com/husio/irc"
+	"github.com/robustirc/bridge/robustsession"
 )
 
 var (
@@ -173,6 +174,7 @@ func main() {
 	ListenerAdd("lmgtfy", runnerLmgtfy)
 	ListenerAdd("urifind", runnerUrifind)
 	ListenerAdd("raumbang", runnerRaumbang)
+	ListenerAdd("greeter", runnerGreet)
 
 	if *verbose {
 		ListenerAdd("verbose debugger", func(parsed Message) {
