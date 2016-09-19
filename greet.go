@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var lastSeenLimit = 5 * time.Minute //30 * 24 * time.Hour
+var lastSeenLimit = 30 * 24 * time.Hour
 var lastSeenWriteThresh = time.Minute
 var greeting *template.Template
 
