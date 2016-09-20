@@ -1,1 +1,1 @@
-Hey {{ .Nick }}. Ich bin {{ .Bot }}, der channel-bot. Du scheinst das erste Mal hier zu sein, Willkommen. Die Meisten Leute schauen hier nur ab und an rein, es kann also eine Weile dauern, bis dir jemand antwortet. Habe einfach Geduld :)
+Hey {{ .Nick }}. Ich bin {{ .Bot }}, der channel-bot. Du scheinst das erste Mal hier zu sein, Willkommen. Die meisten Leute schauen hier nur ab und an rein, es kann also eine Weile dauern, bis dir jemand antwortet. Habe einfach Geduld. :)
