@@ -71,11 +71,20 @@ func runnerGreet(parsed Message) {
 		return
 	}
 
+	// most irc clients add some character to the nick if the original is used
+	// if we have seen the original, don't greet
+	trimmedNick := nick
+	trimmedNickLengh := len(trimmedNick)
+	if trimmedNickLengh > 1 {
+		trimmedNick = trimmedNick[:trimmedNickLengh-1]
+	}
+
 	// To handle renames of users correctly, we also save the hostmask. Only if
 	// we've seen neither it's a genuinely new user.
 	absentNick := touchLastSeen(channel, nick)
+	absentTrimmedNick := touchLastSeen(channel, trimmedNick)
 	absentHostmask := touchLastSeen(channel, Hostmask(parsed))
-	seen := (absentNick <= lastSeenLimit) || (absentHostmask <= lastSeenLimit)
+	seen := (absentNick <= lastSeenLimit) || (absentHostmask <= lastSeenLimit) || (absentTrimmedNick != lastSeenLimit)
 	if parsed.Command == "JOIN" && !seen {
 		log.Printf("I have not seen %q in %q recently, so I'm greeting them", nick, channel)
 
