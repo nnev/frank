@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"sync"
 	"text/template"
 	"time"
@@ -72,8 +73,10 @@ func runnerGreet(parsed Message) {
 	}
 
 	// To handle renames of users correctly, we also save the hostmask. Only if
-	// we've seen neither it's a genuinely new user.
-	absentNick := touchLastSeen(channel, nick)
+	// we've seen neither it's a genuinely new user. We strip trailing _, they
+	// usually appear for duplicate links when the original nick is taken by a
+	// ghost.
+	absentNick := touchLastSeen(channel, strings.TrimRight(nick, "_"))
 	absentHostmask := touchLastSeen(channel, Hostmask(parsed))
 	seen := (absentNick <= lastSeenLimit) || (absentHostmask <= lastSeenLimit)
 	if parsed.Command == "JOIN" && !seen {
