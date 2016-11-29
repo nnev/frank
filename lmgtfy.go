@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const googUrl = "http://googl.com/search?btnI=1&q="
+const googUrl = "http://google.com/search?btnI=1&q="
 
 // regex that matches lmgtfy requests
 var lmgtfyMatcher = regexp.MustCompile(`^(?:[\d\pL._-]+: )?lmgtfy:? (.+)`)
