@@ -175,6 +175,8 @@ func main() {
 	ListenerAdd("urifind", runnerUrifind)
 	ListenerAdd("raumbang", runnerRaumbang)
 	ListenerAdd("greeter", runnerGreet)
+	// Keep this last, so that other runners can access the name lists
+	ListenerAdd("updateMembers", runnerMembers)
 
 	if *verbose {
 		ListenerAdd("verbose debugger", func(parsed Message) {

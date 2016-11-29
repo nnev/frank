@@ -58,8 +58,12 @@ func runnerGreet(parsed Message) {
 		channel = Target(parsed)
 	case "PRIVMSG":
 		channel = Target(parsed)
-	default:
-		return
+	case "QUIT":
+		// QUIT affects all channels. We check if that nick in in #chaos-hd, if
+		// so, let's set channel to that.
+		if IsMember(nick, "#chaos-hd") {
+			channel = "#chaos-hd"
+		}
 	}
 
 	// TODO: Make channels configurable
