@@ -45,7 +45,7 @@ var githubDomainRegex = regexp.MustCompile(`(?i)^https?://(?:[a-z0-9]\.)?github.
 var twitterDomainRegex = regexp.MustCompile(`(?i)^https?://(?:[a-z0-9]\.)?twitter.com`)
 var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9]+(?:\b|$)`)
 
-var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) spoiler`)
+var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) *spoiler`)
 
 // extract data from a PDF's document information dictionary
 var pdfAuthorRegex = regexp.MustCompile(`/Author\(([^)]+?)\)`)
