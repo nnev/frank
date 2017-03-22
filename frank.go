@@ -147,6 +147,16 @@ func parse(msg string) {
 		return
 	}
 
+	// Work around incorrect parsing when a single word PRIVMSG is not formatted
+	// as a trailing message, see: github.com/robustirc/robustirc/issues/129
+	// We should probably wait for github.com/sorcix/irc/issues/26 to be fixed and
+	// then use that parsing library in favor of the lesser/unmaintained
+	// husio/irc.
+	if parsed.Trailing == "" && len(parsed.Params) == 2 {
+		parsed.Trailing = parsed.Params[1]
+		parsed.Params = parsed.Params[:1]
+	}
+
 	if parsed.Command == "PONG" {
 		return
 	}
