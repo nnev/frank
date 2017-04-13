@@ -4,28 +4,30 @@ import (
 	"log"
 	"strings"
 	"time"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
 var lastHelps = map[string]time.Time{}
 
-func runnerHelp(parsed Message) {
+func runnerHelp(parsed *irc.Message) error {
 	n := Nick(parsed)
 
 	if !IsPrivateQuery(parsed) {
-		return
+		return nil
 	}
 
-	content := strings.ToLower(parsed.Trailing)
+	content := strings.ToLower(parsed.Trailing())
 
 	if content != "help" && content != "!help" {
 		// no help request, ignore
-		return
+		return nil
 	}
 
 	last := lastHelps[n]
 	if time.Since(last).Minutes() <= 1 {
 		log.Printf("User %s tried spamming for help, not answering (last request @ %v)", n, last)
-		return
+		return nil
 	}
 
 	lastHelps[n] = time.Now()
@@ -52,4 +54,6 @@ func runnerHelp(parsed Message) {
 
 	Privmsg(n, "If you need more details, please look at my source:")
 	Privmsg(n, "https://github.com/breunigs/frank")
+
+	return nil
 }

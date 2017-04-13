@@ -4,6 +4,8 @@ import (
 	"log"
 	"strings"
 	"sync"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
 type membersMap struct {
@@ -49,7 +51,7 @@ func (m membersMap) IsMember(nick, channel string) bool {
 
 var members = membersMap{m: make(map[string]map[string]bool)}
 
-func runnerMembers(parsed Message) {
+func runnerMembers(parsed *irc.Message) error {
 	interesting := map[string]bool{
 		"353":  true,
 		"PART": true,
@@ -58,7 +60,7 @@ func runnerMembers(parsed Message) {
 		"NICK": true,
 	}
 	if !interesting[parsed.Command] {
-		return
+		return nil
 	}
 
 	members.mtx.Lock()
@@ -67,7 +69,7 @@ func runnerMembers(parsed Message) {
 	switch parsed.Command {
 	case "353": // Names
 		channel := parsed.Params[len(parsed.Params)-1]
-		for _, n := range strings.Split(parsed.Trailing, " ") {
+		for _, n := range strings.Split(parsed.Trailing(), " ") {
 			n = strings.TrimSpace(strings.TrimLeft(n, "~&@%+"))
 			if n != "" {
 				members.add(n, channel)
@@ -83,15 +85,16 @@ func runnerMembers(parsed Message) {
 			delete(c, nick)
 		}
 	case "JOIN":
-		channel := parsed.Trailing
+		channel := parsed.Trailing()
 		nick := Nick(parsed)
 		members.add(nick, channel)
 	case "NICK":
 		from := Nick(parsed)
-		to := parsed.Trailing
+		to := parsed.Trailing()
 		members.rename(from, to)
 	}
 	log.Printf("Members is now %v", members.m)
+	return nil
 }
 
 func IsMember(nick, channel string) bool {

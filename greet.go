@@ -11,6 +11,8 @@ import (
 	"sync"
 	"text/template"
 	"time"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
 var lastSeenLimit = 30 * 24 * time.Hour
@@ -42,18 +44,18 @@ func touchLastSeen(channel string, nick string) (absent time.Duration) {
 	return time.Now().Sub(t)
 }
 
-func runnerGreet(parsed Message) {
+func runnerGreet(parsed *irc.Message) error {
 	botnick := *nick
 	if botnick == Nick(parsed) {
 		// we ignore ourselves
-		return
+		return nil
 	}
 	nick := Nick(parsed)
 
 	var channel string
 	switch parsed.Command {
 	case "JOIN":
-		channel = parsed.Trailing
+		channel = parsed.Trailing()
 	case "PART":
 		channel = Target(parsed)
 	case "PRIVMSG":
@@ -68,12 +70,12 @@ func runnerGreet(parsed Message) {
 
 	// TODO: Make channels configurable
 	if channel != "#chaos-hd" {
-		return
+		return nil
 	}
 
 	if channel == "" || channel[0] != '#' {
 		log.Printf("Not greeting in non-channel %q", channel)
-		return
+		return nil
 	}
 
 	// To handle renames of users correctly, we also save the hostmask. Only if
@@ -108,6 +110,8 @@ func runnerGreet(parsed Message) {
 	if absentNick > lastSeenWriteThresh || absentHostmask > lastSeenWriteThresh {
 		writeLastSeen()
 	}
+
+	return nil
 }
 
 func writeLastSeen() {

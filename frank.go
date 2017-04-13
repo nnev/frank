@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
-	parser "github.com/husio/irc"
 	"github.com/robustirc/bridge/robustsession"
+	"gopkg.in/sorcix/irc.v2"
 )
 
 var (
@@ -25,8 +25,6 @@ var (
 
 	verbose = flag.Bool("verbose", false, "enable to get very detailed logs")
 )
-
-type Message *parser.Message
 
 var session *robustsession.RobustSession
 
@@ -103,14 +101,15 @@ func boot() {
 	}
 
 	nickserv := make(chan bool, 1)
-	listener := ListenerAdd("nickserv auth detector", func(parsed Message) {
+	listener := ListenerAdd("nickserv auth detector", func(parsed *irc.Message) error {
 		// PREFIX=services.robustirc.net COMMAND=MODE PARAMS=[frank2] TRAILING=+r
 		is_me := Target(parsed) == *nick
-		is_plus_r := strings.HasPrefix(parsed.Trailing, "+") && strings.Contains(parsed.Trailing, "r")
+		is_plus_r := strings.HasPrefix(parsed.Trailing(), "+") && strings.Contains(parsed.Trailing(), "r")
 
 		if parsed.Command == "MODE" && is_me && is_plus_r {
 			nickserv <- true
 		}
+		return nil
 	})
 
 	log.Printf("NICKSERV: Authenticating…")
@@ -128,40 +127,6 @@ func boot() {
 		listener.Remove()
 		setupJoinChannels()
 	}()
-}
-
-func parse(msg string) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("parser broken: %v\nMessage that caused this: %s", r, msg)
-		}
-	}()
-
-	if strings.TrimSpace(msg) == "" {
-		return
-	}
-
-	parsed, err := parser.ParseLine(msg)
-	if err != nil {
-		log.Fatal("Could not parse IRC message: %v", err)
-		return
-	}
-
-	// Work around incorrect parsing when a single word PRIVMSG is not formatted
-	// as a trailing message, see: github.com/robustirc/robustirc/issues/129
-	// We should probably wait for github.com/sorcix/irc/issues/26 to be fixed and
-	// then use that parsing library in favor of the lesser/unmaintained
-	// husio/irc.
-	if parsed.Trailing == "" && len(parsed.Params) == 2 {
-		parsed.Trailing = parsed.Params[1]
-		parsed.Params = parsed.Params[:1]
-	}
-
-	if parsed.Command == "PONG" {
-		return
-	}
-
-	listenersRun(parsed)
 }
 
 func main() {
@@ -190,12 +155,13 @@ func main() {
 	ListenerAdd("updateMembers", runnerMembers)
 
 	if *verbose {
-		ListenerAdd("verbose debugger", func(parsed Message) {
+		ListenerAdd("verbose debugger", func(parsed *irc.Message) error {
 			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix, parsed.Command, parsed.Params, parsed.Trailing)
+			return nil
 		})
 	}
 
-	ListenerAdd("nickname checker", func(parsed Message) {
+	ListenerAdd("nickname checker", func(parsed *irc.Message) error {
 		if parsed.Command == ERR_NICKNAMEINUSE {
 			log.Printf("Nickname is already in use. Sleeping for a minute before restarting.")
 			listenersReset()
@@ -203,10 +169,21 @@ func main() {
 			log.Printf("Killing now due to nickname being in use")
 			kill()
 		}
+		return nil
 	})
 
-	for {
-		msg := <-session.Messages
-		parse(msg)
+	for raw := range session.Messages {
+		msg := irc.ParseMessage(raw)
+		if msg == nil {
+			continue // message could not be parsed
+		}
+
+		if msg.Command == irc.PONG {
+			continue
+		}
+
+		if err := listenersRun(msg); err != nil {
+			log.Printf("error processing %q (%#v): %v", raw, msg, err)
+		}
 	}
 }

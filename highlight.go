@@ -5,11 +5,13 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
 var customTextRegex = regexp.MustCompile(`^(?:high|highpub)\s+(.{1,70})`)
 
-func runnerHighlight(parsed Message) {
+func runnerHighlight(parsed *irc.Message) error {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("MEGA-WTF:pkg: %v", r)
@@ -17,14 +19,14 @@ func runnerHighlight(parsed Message) {
 	}()
 
 	if !IsPrivateQuery(parsed) {
-		return
+		return nil
 	}
 
-	msg := parsed.Trailing
+	msg := parsed.Trailing()
 
 	if !strings.HasPrefix(msg, "high") {
 		// no highlight request, ignore
-		return
+		return nil
 	}
 
 	n := Nick(parsed)
@@ -47,4 +49,6 @@ func runnerHighlight(parsed Message) {
 		log.Printf("highlighting %s privately for: %s", n, highlight)
 		Privmsg(n, highlight)
 	}
+
+	return nil
 }

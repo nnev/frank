@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/transform"
+	"gopkg.in/sorcix/irc.v2"
 )
 
 // how many URLs can the cache store
@@ -63,7 +64,7 @@ var pointlessTitles = []string{"",
 	"pr0gramm.com",
 	"Google"}
 
-func runnerUrifind(parsed Message) {
+func runnerUrifind(parsed *irc.Message) error {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("MEGA-WTF:pkg: %v", r)
@@ -71,14 +72,14 @@ func runnerUrifind(parsed Message) {
 	}()
 
 	if parsed.Command != "PRIVMSG" {
-		return
+		return nil
 	}
 
-	msg := parsed.Trailing
+	msg := parsed.Trailing()
 
 	if noSpoilerRegex.MatchString(msg) {
 		log.Printf("not spoilering this line: %s", msg)
-		return
+		return nil
 	}
 
 	urls := extract(msg)
@@ -122,6 +123,7 @@ func runnerUrifind(parsed Message) {
 			}
 		}(url)
 	}
+	return nil
 }
 
 // regexing ////////////////////////////////////////////////////////////
@@ -377,7 +379,7 @@ func cacheGetSecondsToLastPost(title string) int {
 
 // util ////////////////////////////////////////////////////////////////
 
-func postTitle(parsed Message, title string, prefix string) {
+func postTitle(parsed *irc.Message, title string, prefix string) {
 	tgt := Target(parsed)
 
 	secondsAgo := cacheGetSecondsToLastPost(title)

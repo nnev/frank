@@ -3,20 +3,22 @@ package main
 import (
 	"log"
 	"strings"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
-func runnerAdmin(parsed Message) {
+func runnerAdmin(parsed *irc.Message) error {
 	if !IsPrivateQuery(parsed) {
-		return
+		return nil
 	}
 
 	n := Nick(parsed)
 	if !IsNickAdmin(parsed) {
 		// log.Printf("Not executing admin command for normal user %s", n)
-		return
+		return nil
 	}
 
-	msg := parsed.Trailing
+	msg := parsed.Trailing()
 
 	if strings.HasPrefix(msg, "msg ") {
 		cmd := strings.SplitN(msg, " ", 3)
@@ -49,4 +51,6 @@ func runnerAdmin(parsed Message) {
 		channel := cmd[1]
 		setTopic(channel)
 	}
+
+	return nil
 }

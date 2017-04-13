@@ -4,9 +4,13 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"gopkg.in/sorcix/irc.v2"
+
+	"golang.org/x/sync/errgroup"
 )
 
-type Runner func(Message)
+type Runner func(*irc.Message) error
 
 type Listener struct {
 	desc    string
@@ -74,14 +78,16 @@ func listenersReset() {
 	listenersMutex.Unlock()
 }
 
-func listenersRun(parsed Message) {
+func listenersRun(msg *irc.Message) error {
 	listenersMutex.Lock()
+	defer listenersMutex.Unlock()
 
-	for _, listener := range listeners {
-		go func(l *Listener) {
-			l.runner(parsed)
-		}(listener)
+	var wg errgroup.Group
+	for _, l := range listeners {
+		l := l // copy
+		wg.Go(func() error {
+			return l.runner(msg)
+		})
 	}
-
-	listenersMutex.Unlock()
+	return wg.Wait()
 }

@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
 const karmaFile = "karma"
@@ -22,7 +24,7 @@ var karmaAnswerRegex = regexp.MustCompile(`(?i)^karma:?\s+(?:for\s+)?([\d\pL]+)\
 var defaultData = map[string]int{"frank": 9999}
 var data = readData()
 
-func runnerKarma(parsed Message) {
+func runnerKarma(parsed *irc.Message) error {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Printf("Bug in karma: %v", r)
@@ -31,14 +33,15 @@ func runnerKarma(parsed Message) {
 
 	match(parsed)
 	answer(parsed)
+	return nil
 }
 
 // reads the current line for karma-esque expressions and ups/dows the
 // thing that was voted on. A user can’t vote on her/himself.
-func match(parsed Message) {
+func match(parsed *irc.Message) {
 	n := Nick(parsed)
 	tgt := Target(parsed)
-	msg := parsed.Trailing
+	msg := parsed.Trailing()
 
 	if !strings.HasPrefix(tgt, "#") {
 		// love/hate needs to be announced publicly to avoid skewing the
@@ -76,10 +79,10 @@ func match(parsed Message) {
 }
 
 // answers a user with the current karma for a given thing
-func answer(parsed Message) {
+func answer(parsed *irc.Message) {
 	n := Nick(parsed)
 	tgt := Target(parsed)
-	msg := parsed.Trailing
+	msg := parsed.Trailing()
 
 	if !karmaAnswerRegex.MatchString(msg) {
 		return
