@@ -2,9 +2,11 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const googUrl = "http://googl.com/search?btnI=1&q="
@@ -42,7 +44,8 @@ func extractPost(msg string) string {
 	}
 
 	u := googUrl + url.QueryEscape(match[1])
-	t, lastUrl, err := TitleGet(u)
+	c := http.Client{Timeout: 10 * time.Second}
+	t, lastUrl, err := TitleGet(&c, u)
 
 	post := ""
 
