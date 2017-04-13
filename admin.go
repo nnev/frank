@@ -41,11 +41,6 @@ func runnerAdmin(parsed *irc.Message) error {
 		kill()
 	}
 
-	if msg == "memprofile" {
-		path := writeMemoryProfile()
-		Privmsg(Nick(parsed), "Wrote memory profile to "+path+", have a look on the server.")
-	}
-
 	if strings.HasPrefix(msg, "settopic #") {
 		cmd := strings.SplitN(msg, " ", 2)
 		channel := cmd[1]

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -12,11 +13,15 @@ import (
 
 	"github.com/robustirc/bridge/robustsession"
 	"gopkg.in/sorcix/irc.v2"
+
+	_ "net/http/pprof"
 )
 
 var (
 	network   = flag.String("network", "", `DNS name to connect to (e.g. "robustirc.net"). The _robustirc._tcp SRV record must be present.`)
 	tlsCAFile = flag.String("tls_ca_file", "", "Use the specified file as trusted CA instead of the system CAs. Useful for testing.")
+
+	listenHttp = flag.String("listen_http", "", "[host]:port on which to serve debug handlers (if non-empty)")
 
 	channels          = flag.String("channels", "", "channels the bot should join. Space separated.")
 	nick              = flag.String("nick", "frank", "nickname of the bot")
@@ -130,8 +135,16 @@ func boot() {
 }
 
 func main() {
-	listenersReset()
 	setupFlags()
+
+	if *listenHttp != "" {
+		go func() {
+			log.Fatal(http.ListenAndServe(*listenHttp, nil))
+		}()
+	}
+
+	listenersReset()
+
 	setupSession()
 	setupSignalHandler()
 	setupKeepalive()
