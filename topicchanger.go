@@ -3,191 +3,158 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
 	"log"
-	"regexp"
 	"strings"
 	"time"
+
+	"gopkg.in/sorcix/irc.v2"
+
+	_ "github.com/lib/pq"
 )
 
-const INTERVAL_PERIOD time.Duration = 5 * time.Minute
-const HOUR_TO_TICK int = 0
-const MINUTE_TO_TICK int = 0
-const SECOND_TO_TICK int = 1
-const SEPARATOR = "|"
-
 // I would prefer 🕖, but it’s not available in most fonts
-const ROBOT_BLOCK_IDENTIFIER = "ꜰ"
-
-var lastFailureWarning = time.Unix(0, 0)
-
-var regexTomorrow = regexp.MustCompile(`(?i)\smorgen:?\s`)
-var regexToday = regexp.MustCompile(`(?i)\sheute:?\s`)
+const RobotBlockIdentifier = "ꜰ"
 
 func TopicChanger() {
-	ticker := time.NewTicker(INTERVAL_PERIOD)
 	for {
-		setTopic("#chaos-hd")
-		<-ticker.C
+		Post("TOPIC #chaos-hd") // TODO: configurable channel
+		time.Sleep(5 * time.Minute)
 	}
 }
 
-func setTopic(channel string) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("topicchanger error: %v", r)
-			if time.Since(lastFailureWarning) >= time.Hour {
-				Privmsg(channel, fmt.Sprintf("failed to retrieve topic: %v", r))
-				lastFailureWarning = time.Now()
-			}
-		}
-	}()
+func runnerTopicChanger(msg *irc.Message) error {
+	var topic string
 
-	topic, err := TopicGet(channel)
+	channel := "#chaos-hd" // TODO: configurable channel
+
+	switch msg.Command {
+	// A user changed the topic
+	case irc.TOPIC:
+		if len(msg.Params) < 1 || msg.Params[0] != channel {
+			return nil
+		}
+		return updateTopic(channel, msg.Trailing())
+
+	// We received a reply to our periodic TOPIC command.
+	case irc.RPL_TOPIC:
+		topic = msg.Trailing()
+		fallthrough
+	case irc.RPL_NOTOPIC:
+		if len(msg.Params) < 2 || msg.Params[1] != channel {
+			return nil
+		}
+		return updateTopic(channel, topic)
+	}
+
+	return nil
+}
+
+const separator = "|"
+
+func replaceTopic(current string) (string, error) {
+	nextEvent, err := getNextEvent()
 	if err != nil {
-		log.Printf("cannot update topic: TopicGet reports: %s", err)
-		return
+		return "", err
 	}
 
-	newtopic := insertNextEvent(topic)
-
-	if topic == newtopic {
-		return
-	}
-
-	log.Printf("%s OLD TOPIC: %s", channel, topic)
-	log.Printf("%s NEW TOPIC: %s", channel, newtopic)
-
-	Topic(channel, newtopic)
-}
-
-func insertNextEvent(topic string) string {
-	event := " " + ROBOT_BLOCK_IDENTIFIER + " " + getNextEventString() + " "
-
-	parts := splitTopic(topic)
-
-	eventIdx := -1
-	for i, part := range parts {
-		if strings.Contains(part, ROBOT_BLOCK_IDENTIFIER) {
-			eventIdx = i
-			break
+	nextEventPart := fmt.Sprintf(" %s %v ", RobotBlockIdentifier, nextEvent)
+	parts := strings.Split(current+" ", separator)
+	for idx, part := range parts {
+		if strings.Contains(part, RobotBlockIdentifier) {
+			parts[idx] = nextEventPart
 		}
 	}
-
-	if eventIdx < 0 {
-		parts = append(parts, event)
-	} else {
-		parts[eventIdx] = event
+	if !strings.Contains(current, RobotBlockIdentifier) {
+		parts = append(parts, nextEventPart)
 	}
-
-	return joinTopic(parts)
+	return strings.TrimSpace(strings.Join(parts, separator)), nil
 }
 
-func splitTopic(topic string) []string {
-	return strings.Split(" "+topic+" ", SEPARATOR)
+func updateTopic(channel, currentTopic string) error {
+	newTopic, err := replaceTopic(currentTopic)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(currentTopic) != strings.TrimSpace(newTopic) {
+		log.Printf("updating topic from %q to %q", currentTopic, newTopic)
+		Post("TOPIC " + channel + " :" + newTopic)
+	}
+	return nil
 }
 
-func joinTopic(parts []string) string {
-	return strings.TrimSpace(strings.Join(parts, SEPARATOR))
-}
-
-// stores all required data for the next event to accurately
-// describe it everyone who listens.
 type event struct {
-	Stammtisch bool
-	Override   sql.NullString
-	Location   sql.NullString
-	Date       time.Time
-	Topic      sql.NullString
+	stammtisch bool
+	override   string
+	location   string
+	date       time.Time
+	topic      string
 }
 
-// retrieves the next event from the database and parses it into
-// an “event”. Returns nil if the DB connection or query fails.
-// Function is defined in this way so it may easily be overwritten
-// when testing.
-var getNextEvent = func() *event {
-	db, err := sqlx.Connect("postgres", "dbname=nnev user=anon host=/var/run/postgresql sslmode=disable")
-	if err != nil {
-		log.Println(err)
-		panic(err)
-	}
-
-	defer db.Close()
-
-	evt := event{}
-	err = db.Get(&evt, `
-		SELECT stammtisch, override, location, termine.date, topic
-		FROM termine
-		LEFT JOIN vortraege
-		ON termine.date = vortraege.date
-		WHERE termine.date >= $1
-		ORDER BY termine.date ASC
-		LIMIT 1`, time.Now().Format("2006-01-02"))
-
-	if err != nil {
-		log.Println(err)
-		panic(err)
-	}
-
-	if *verbose {
-		log.Printf("event from SQL: %v", evt)
-	}
-
-	return &evt
-}
-
-// converts an event (retrieved from the database) into a condensed
-// single string in human readable form
-func getNextEventString() string {
-	evt := getNextEvent()
-
+func (evt *event) String() string {
 	t := ""
 
-	date := evt.Date.Format("2006-01-02")
+	date := evt.date.Format("2006-01-02")
 	dateToday := time.Now().Format("2006-01-02")
-	dateTomorrow := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+	dateTomorrow := time.Now().Add(24 * time.Hour).Format("2006-01-02")
 
 	switch date {
 	case dateToday:
-		t += "HEUTE (" + evt.Date.Format("02.Jan") + ")"
+		t += "HEUTE (" + evt.date.Format("02.Jan") + ")"
 	case dateTomorrow:
-		t += "MORGEN (" + evt.Date.Format("02.Jan") + ")"
+		t += "MORGEN (" + evt.date.Format("02.Jan") + ")"
 	default:
 		t += date
 	}
 
 	t += ": "
 
-	if toStr(evt.Override) != "" {
-		t += "Ausnahmsweise: " + toStr(evt.Override)
-
-	} else if evt.Stammtisch {
-		t += "Stammtisch @ " + strOrDefault(toStr(evt.Location), "TBA")
+	if evt.override != "" {
+		t += "Ausnahmsweise: " + evt.override
+	} else if evt.stammtisch {
+		t += "Stammtisch @ " + evt.location
 		t += " https://www.noname-ev.de/yarpnarp.html"
 		t += " bitte zu/absagen"
-
 	} else {
-		t += "c¼h: " + strOrDefault(toStr(evt.Topic), "noch keine ◉︵◉")
+		t += "c¼h: " + evt.topic
 	}
 
 	return strings.TrimSpace(t)
 }
 
-// returns the first argument “str”, unless it is empty. If so,
-// it will instead return the second argument “def”.
-func strOrDefault(str string, def string) string {
-	if str == "" {
-		return def
-	} else {
-		return str
+var getNextEvent = func() (*event, error) {
+	const nextEventQuery = `
+SELECT
+  stammtisch,
+  override,
+  CASE WHEN location = '' OR location IS NULL THEN 'TBA' ELSE location END,
+  termine.date,
+  CASE WHEN topic = '' OR topic IS NULL THEN 'noch keine ◉︵◉' ELSE topic END
+FROM termine
+LEFT JOIN vortraege
+ON termine.date = vortraege.date
+WHERE termine.date >= NOW()
+ORDER BY termine.date ASC
+LIMIT 1
+`
+	db, err := sql.Open("postgres", "dbname=nnev user=anon host=/var/run/postgresql sslmode=disable")
+	if err != nil {
+		return nil, err
 	}
-}
+	defer db.Close()
 
-func toStr(ns sql.NullString) string {
-	if ns.Valid {
-		return ns.String
-	} else {
-		return ""
+	var e event
+	if err := db.QueryRow(nextEventQuery).Scan(
+		&e.stammtisch,
+		&e.override,
+		&e.location,
+		&e.date,
+		&e.topic); err != nil {
+		return nil, err
 	}
+
+	if *verbose {
+		log.Printf("event from SQL: %#v", e)
+	}
+
+	return &e, nil
 }

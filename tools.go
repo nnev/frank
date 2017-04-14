@@ -1,11 +1,9 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"regexp"
 	"strings"
-	"time"
 
 	"gopkg.in/sorcix/irc.v2"
 )
@@ -20,47 +18,6 @@ func Post(msg string) {
 
 func Privmsg(user string, msg string) {
 	Post("PRIVMSG " + user + " :" + msg)
-}
-
-func Topic(channel string, topic string) {
-	Post("TOPIC " + channel + " :" + topic)
-}
-
-func TopicGet(channel string) (string, error) {
-	received := make(chan string)
-
-	topicGetRunner := func(parsed *irc.Message) error {
-		// Example Topic:
-		// PREFIX=robustirc.net COMMAND=332 PARAMS=[frank #test]
-
-		p := parsed.Params
-
-		if len(p) < 2 || p[1] != channel {
-			// not the channel we're interested in
-			return nil
-		}
-
-		if parsed.Command == RPL_TOPIC {
-			received <- parsed.Trailing()
-		}
-
-		if parsed.Command == RPL_NOTOPIC {
-			received <- ""
-		}
-		return nil
-	}
-
-	l := ListenerAdd("topic getter", topicGetRunner)
-	Post("TOPIC " + channel)
-
-	select {
-	case topic := <-received:
-		l.Remove()
-		return topic, nil
-	case <-time.After(60 * time.Second):
-		l.Remove()
-	}
-	return "", errors.New("failed to get topic: no reply within 60 seconds")
 }
 
 func IsPrivateQuery(p *irc.Message) bool {

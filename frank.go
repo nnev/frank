@@ -167,6 +167,8 @@ func main() {
 	// Keep this last, so that other runners can access the name lists
 	ListenerAdd("updateMembers", runnerMembers)
 
+	ListenerAdd("topicchanger", runnerTopicChanger)
+
 	if *verbose {
 		ListenerAdd("verbose debugger", func(parsed *irc.Message) error {
 			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix, parsed.Command, parsed.Params, parsed.Trailing)

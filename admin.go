@@ -41,11 +41,5 @@ func runnerAdmin(parsed *irc.Message) error {
 		kill()
 	}
 
-	if strings.HasPrefix(msg, "settopic #") {
-		cmd := strings.SplitN(msg, " ", 2)
-		channel := cmd[1]
-		setTopic(channel)
-	}
-
 	return nil
 }
