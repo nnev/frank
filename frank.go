@@ -146,7 +146,7 @@ func main() {
 	}
 
 	ListenerAdd("nickname checker", func(parsed *irc.Message) error {
-		if parsed.Command == ERR_NICKNAMEINUSE {
+		if parsed.Command == irc.ERR_NICKNAMEINUSE {
 			log.Printf("Nickname is already in use. Sleeping for a minute before restarting.")
 			time.Sleep(time.Minute)
 			log.Printf("Killing now due to nickname being in use")
