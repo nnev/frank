@@ -5,10 +5,6 @@ import (
 	"bytes"
 	_ "crypto/sha512"
 	"errors"
-	"golang.org/x/net/html"
-	"golang.org/x/net/html/atom"
-	"golang.org/x/net/html/charset"
-	"golang.org/x/text/transform"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html"
+	"golang.org/x/net/html/charset"
+	"golang.org/x/text/transform"
 )
 
 // how many URLs can the cache store
@@ -39,11 +39,6 @@ const titleMaxAllowedLength = 500
 var whitespaceRegex = regexp.MustCompile(`[\s\0\p{Cf}\p{Cc}]+`)
 
 var ignoreDomainsRegex = regexp.MustCompile(`^http://p\.nnev\.de`)
-
-var githubDomainRegex = regexp.MustCompile(`(?i)^https?://(?:[a-z0-9]\.)?github.com`)
-
-var twitterDomainRegex = regexp.MustCompile(`(?i)^https?://(?:[a-z0-9]\.)?twitter.com`)
-var twitterPicsRegex = regexp.MustCompile(`(?i)(?:\b|^)pic\.twitter\.com/[a-z0-9]+(?:\b|$)`)
 
 var noSpoilerRegex = regexp.MustCompile(`(?i)(don't|no|kein|nicht) *spoiler`)
 
@@ -118,7 +113,8 @@ func runnerUrifind(parsed Message) {
 			if strings.HasSuffix(strings.ToLower(url), ".pdf") {
 				title = PDFTitleGet(url)
 			} else {
-				title, _, _ = TitleGet(url)
+				c := http.Client{Timeout: 10 * time.Second}
+				title, _, _ = TitleGet(&c, url)
 			}
 			if !IsIn(title, pointlessTitles) {
 				postTitle(parsed, title, "")
@@ -183,7 +179,8 @@ func PDFTitleGet(url string) string {
 		}
 	}()
 
-	gTitle, _, gErr := TitleGet("https://webcache.googleusercontent.com/search?q=cache:" + url)
+	c := http.Client{Timeout: 10 * time.Second}
+	gTitle, _, gErr := TitleGet(&c, "https://webcache.googleusercontent.com/search?q=cache:"+url)
 	if gErr == nil && len(gTitle) > 0 {
 		return gTitle
 	}
@@ -195,7 +192,6 @@ func PDFTitleGet(url string) string {
 	}
 	req.Header.Set("User-Agent", "frank IRC Bot")
 
-	c := http.Client{Timeout: 10 * time.Second}
 	r, err := c.Do(req)
 	if err != nil {
 		log.Printf("WTF: could not resolve %s: %s", url, err)
@@ -255,7 +251,11 @@ func PDFTitleGet(url string) string {
 
 // http/html stuff /////////////////////////////////////////////////////
 
-func TitleGet(url string) (string, string, error) {
+type Doer interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
+func TitleGet(doer Doer, url string) (string, string, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("WTF: could not make http request %s: %s", url, err)
@@ -263,8 +263,7 @@ func TitleGet(url string) (string, string, error) {
 	}
 	req.Header.Set("User-Agent", "frank IRC Bot")
 
-	c := http.Client{Timeout: 10 * time.Second}
-	r, err := c.Do(req)
+	r, err := doer.Do(req)
 	if err != nil {
 		log.Printf("WTF: could not resolve %s: %s", url, err)
 		return "", url, err
@@ -272,8 +271,6 @@ func TitleGet(url string) (string, string, error) {
 	defer r.Body.Close()
 
 	lastUrl := r.Request.URL.String()
-	isTweet := twitterDomainRegex.MatchString(lastUrl)
-	isGithub := githubDomainRegex.MatchString(lastUrl)
 
 	head := make([]byte, 1024)
 
@@ -290,7 +287,10 @@ func TitleGet(url string) (string, string, error) {
 	encoding, _, _ := charset.DetermineEncoding(head, contentType)
 	reader = transform.NewReader(reader, encoding.NewDecoder())
 
-	title := titleParseHtml(reader, isTweet || isGithub)
+	title, err := extractTitleFromHTML(reader)
+	if err != nil {
+		return "", lastUrl, err
+	}
 
 	if len(title) > titleMaxAllowedLength {
 		title = title[:titleMaxAllowedLength]
@@ -305,145 +305,26 @@ func TitleGet(url string) (string, string, error) {
 	return title, lastUrl, nil
 }
 
-// parses the incoming HTML fragment and tries to extract text from
-// suitable tags. Currently this is the page’s title tag and tweets
-// when the HTML-code is similar enough to twitter.com. Returns
-// title and tweet.
-func titleParseHtml(body io.Reader, detailedSearch bool) string {
-	z := html.NewTokenizer(body)
-
-	title := ""
-
-	githubDesc := ""
-
-	tweetText := ""
-	tweetUserName := ""
-	tweetUserScreenName := ""
-	tweetPicUrl := ""
-
-	titleDepth := -1
-	tweetPermalinkDepth := -1
-	tweetTextDepth := -1
-	githubDescDepth := -1
-
-	depth := 0
-TokenizerLoop:
-	for {
-		tt := z.Next()
-		tn, hasAttr := z.TagName()
-
-		if bytes.Equal(tn, []byte("img")) {
-			// skip tags that are likely not to be closed. E.g. <img src="asd"> would
-			// permanently increase the depth by one and thus break the simple logic
-			// below.
-			continue
+func extractTitleFromHTML(body io.Reader) (string, error) {
+	node, err := html.Parse(body)
+	if err != nil {
+		return "", err
+	}
+	var title string
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "title" {
+			title = n.FirstChild.Data
 		}
-
-		switch tt {
-		case html.ErrorToken:
-			if z.Err() != io.EOF {
-				log.Printf("Could not parse HTML: %s", z.Err())
-			}
-			break TokenizerLoop
-
-		case html.TextToken:
-			text := string(z.Text())
-			if titleDepth >= 0 {
-				title += text
-			}
-			if tweetTextDepth >= 0 {
-				tweetText += text
-			}
-			if githubDescDepth >= 0 {
-				githubDesc += text
-			}
-
-		case html.StartTagToken:
-			depth++
-
-			if bytes.Equal(tn, []byte("title")) {
-				titleDepth = depth
-				continue
-			}
-
-			if !detailedSearch {
-				continue
-			}
-
-			attrs := make(map[string]string)
-			for hasAttr {
-				var key, val []byte
-				key, val, hasAttr = z.TagAttr()
-				attrs[atom.String(key)] = string(val)
-			}
-
-			if bytes.Equal(tn, []byte("div")) && attrs["class"] == "repository-description" {
-				githubDescDepth = depth
-			}
-
-			if hasClass(attrs, "permalink-tweet") {
-				tweetText = ""
-				tweetUserName = attrs["data-name"]
-				tweetUserScreenName = attrs["data-screen-name"]
-				tweetPermalinkDepth = depth
-			}
-
-			if hasClass(attrs, "tweet-text") && depth > tweetPermalinkDepth && tweetPermalinkDepth > -1 {
-				tweetTextDepth = depth
-			}
-
-			isMedia := hasClass(attrs, "media") || hasClass(attrs, "media-thumbnail")
-			if tweetPicUrl == "" && isMedia && !hasClass(attrs, "profile-picture") {
-				tweetPicUrl = attrs["data-url"]
-			}
-
-		case html.EndTagToken:
-			if depth <= titleDepth {
-				titleDepth = -1
-				if title != "" && !detailedSearch {
-					break TokenizerLoop
-				}
-			}
-
-			if depth <= githubDescDepth {
-				githubDescDepth = -1
-				if githubDesc != "" {
-					break TokenizerLoop
-				}
-			}
-
-			if depth <= tweetTextDepth {
-				tweetTextDepth = -1
-			}
-
-			if depth <= tweetPermalinkDepth {
-				tweetPermalinkDepth = -1
-				break TokenizerLoop
-			}
-
-			depth--
+		if title != "" {
+			return
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
 		}
 	}
-
-	if githubDesc != "" {
-		return clean(githubDesc)
-	}
-
-	if tweetText != "" {
-		tweetText = twitterPicsRegex.ReplaceAllString(tweetText, "")
-		tweetUser := tweetUserName + " (@" + tweetUserScreenName + "): "
-		if tweet := clean(tweetUser + tweetText + " " + tweetPicUrl); tweet != "" {
-			return tweet
-		}
-	}
-
-	return clean(title)
-}
-
-func hasClass(attrs map[string]string, class string) bool {
-	classes := strings.Replace(attrs["class"], "\n", " ", -1)
-	class = " " + strings.TrimSpace(class) + " "
-	return strings.Contains(" "+classes+" ", class)
+	f(node)
+	return title, nil
 }
 
 // Cache ///////////////////////////////////////////////////////////////

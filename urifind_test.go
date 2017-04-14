@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -51,30 +52,62 @@ func TestExtract(t *testing.T) {
 	}
 }
 
-func TestTitleGet(t *testing.T) {
-	var samples = make(map[string]string)
-	samples["https://twitter.com/meganfinger/status/444586462076346368"] = "Megan Finger (@meganfinger): THANK YOU Central for my awesome email address and username...... Like really https://pbs.twimg.com/media/Bit9CBQCYAAYv_-.jpg:large"
-	samples["https://twitter.com/dave_tucker/status/400269131255390210"] = "Dave Tucker (@dave_tucker): This morning the wife asked “Why is your phone issuing you death threats?”. Me: “Oh it’s just my new alarm clock” /cc @CARROT_app"
-	samples["http://twitter.com/dave_tucker/status/400269131255390210"] = "(@dave_tucker): This morning the wife asked “Why is your phone issuing you death threats?”. Me: “Oh it’s just my new alarm clock” /cc @CARROT_app"
-	samples["https://twitter.com/Perspective_pic/status/400356645504831489/photo/1"] = "Perspective Pictures (@Perspective_pic): Sorry but this without a doubt the greatest thing ever seen on an air duct https://pbs.twimg.com/media/BY5aP2RIQAAWPl1.jpg:large"
-	samples["https://twitter.com/Perspective_pic/status/400356645504831489"] = "Perspective Pictures (@Perspective_pic): Sorry but this without a doubt the greatest thing ever seen on an air duct https://pbs.twimg.com/media/BY5aP2RIQAAWPl1.jpg:large"
-	samples["https://twitter.com/quityourjrob/status/405438033853313025/photo/1"] = "(@jowrotethis): How to tell if a toy is for boys or girls. https://pbs.twimg.com/media/BaBnvl5CYAAyYzm.jpg:large"
-	samples["https://twitter.com/rechelon/status/431242278221275137"] = "(@rechelon): @SebastosPublius @jfsmith23 Yep. Godesky had gathered a large following back then and was more sane than Zerzan & less terrible than Jensen."
-	samples["https://twitter.com/thejeremyvine/status/433607774375649280"] = "(@theJeremyVine): The internet was invented so someone could ask this question - and get an answer: https://pbs.twimg.com/media/BgR7-TQCIAAE4fm.jpg:large"
-	samples["http://twitter.com/thejeremyvine/status/433607774375649280"] = "(@theJeremyVine): The internet was invented so someone could ask this question - and get an answer: https://pbs.twimg.com/media/BgR7-TQCIAAE4fm.jpg:large"
-	samples["https://twitter.com/bhalp1/status/578925947245633536"] = "Ben Halpern (@bhalp1): Sometimes when I'm writing Javascript I want to throw up my hands and say \"this is bullshit!\" but I can never remember what \"this\" refers to"
-	samples["http://www.spiegel.de/schulspiegel/abi/abitur-schueler-beantragt-klausur-nach-informationsfreiheitsgesetz-a-1027298.html"] = "Abitur: Schüler beantragt Klausur nach Informationsfreiheitsgesetz - SPIEGEL ONLINE"
-	samples["https://github.com/breunigs/frank"] = "Frank is an IRC-Bot written in Go. It’s my pet project to learn Go and specifically tailored to my needs."
-	samples["https://github.com/breunigs/python-librtmp-debian"] = "breunigs/python-librtmp-debian · GitHub"
-	samples["http://forum.xda-developers.com/xposed/modules/mod-rootcloak-completely-hide-root-t2574647"] = "[MOD][XPOSED][4.0+] RootCloak - Completely H… | Xposed General | XDA Forums"
-	samples["https://code.facebook.com/posts/1433093613662262/-under-the-hood-facebook-s-cold-storage-system-"] = "Under the hood: Facebook’s cold storage system | Engineering Blog | Facebook Code | Facebook"
-	samples["http://genius.cat-v.org/rob-pike/"] = "Rob Pike"
+const simpleTitleBody = `<!DOCTYPE html>
+<html>
+<head>
+<title>simple title</title>
+</head>
+`
 
-	for url, title := range samples {
-		x, _, _ := TitleGet(url)
-		if !strings.HasSuffix(x, title) {
-			t.Errorf("TitleGet(%v)\n GOT: ||%v||\nWANT: ||%v||", url, x, title)
-		}
+const truncatedBody = `<!DOCTYPE html>
+<html>
+<head>
+<title>title from truncated body</title>
+</he
+`
+
+type nopCloser struct {
+	io.Reader
+}
+
+func (nopCloser) Close() error { return nil }
+
+type stringDoer string
+
+func (sd *stringDoer) Do(r *http.Request) (*http.Response, error) {
+	return &http.Response{
+		Request:    r,
+		StatusCode: http.StatusOK,
+		Body:       nopCloser{strings.NewReader(string(*sd))},
+	}, nil
+}
+
+// TODO: non-200 responses
+// TODO: long title truncation
+
+func TestTitleGet(t *testing.T) {
+	const irrelevantURL = "http://localhost" // irrelevant but valid
+	for _, want := range []struct {
+		body  string
+		title string
+	}{
+		{
+			body:  simpleTitleBody,
+			title: "simple title",
+		},
+		{
+			body:  truncatedBody,
+			title: "title from truncated body",
+		},
+	} {
+		want := want // capture
+		t.Run(want.title, func(t *testing.T) {
+			t.Parallel()
+			sd := stringDoer(want.body)
+			if got, _, _ := TitleGet(&sd, irrelevantURL); !strings.HasSuffix(got, want.title) {
+				t.Errorf("unexpected title: got %q, want %q suffix", got, want.title)
+			}
+		})
 	}
 }
 
