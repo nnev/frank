@@ -97,41 +97,12 @@ func kill() {
 }
 
 func boot() {
+	if *nickserv_password != "" {
+		Post(fmt.Sprintf("PASS nickserv=%s", *nickserv_password))
+	}
 	Post(fmt.Sprintf("NICK %s", *nick))
 	Post(fmt.Sprintf("USER bot 0 * :%s von Bötterich", *nick))
-
-	if *nickserv_password == "" {
-		setupJoinChannels()
-		return
-	}
-
-	nickserv := make(chan bool, 1)
-	listener := ListenerAdd("nickserv auth detector", func(parsed *irc.Message) error {
-		// PREFIX=services.robustirc.net COMMAND=MODE PARAMS=[frank2] TRAILING=+r
-		is_me := Target(parsed) == *nick
-		is_plus_r := strings.HasPrefix(parsed.Trailing(), "+") && strings.Contains(parsed.Trailing(), "r")
-
-		if parsed.Command == "MODE" && is_me && is_plus_r {
-			nickserv <- true
-		}
-		return nil
-	})
-
-	log.Printf("NICKSERV: Authenticating…")
-	Privmsg("nickserv", "identify "+*nickserv_password)
-
-	go func() {
-		select {
-		case <-nickserv:
-			log.Printf("NICKSERV: auth successful")
-
-		case <-time.After(10 * time.Second):
-			log.Printf("NICKSERV: auth failed. No response within 10s, joining channels anyway. Maybe check the password, i.e. “/msg frank msg nickserv identify <pass>” and watch the logs.")
-		}
-
-		listener.Remove()
-		setupJoinChannels()
-	}()
+	setupJoinChannels()
 }
 
 func main() {
