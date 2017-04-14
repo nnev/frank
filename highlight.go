@@ -9,45 +9,40 @@ import (
 	"gopkg.in/sorcix/irc.v2"
 )
 
-var customTextRegex = regexp.MustCompile(`^(?:high|highpub)\s+(.{1,70})`)
+var highlightRe = regexp.MustCompile(`^(?:highpub|high)(?:\s+(.{1,70}))*`)
 
-func runnerHighlight(parsed *irc.Message) error {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("MEGA-WTF:pkg: %v", r)
-		}
-	}()
-
-	if !IsPrivateQuery(parsed) {
+func runnerHighlight(msg *irc.Message) error {
+	// Only accept highlight request via queries (as opposed to in
+	// channels).
+	if msg.Command != irc.PRIVMSG ||
+		len(msg.Params) < 1 ||
+		strings.HasPrefix(msg.Params[0], "#") {
 		return nil
 	}
 
-	msg := parsed.Trailing()
-
-	if !strings.HasPrefix(msg, "high") {
-		// no highlight request, ignore
-		return nil
+	matches := highlightRe.FindStringSubmatch(msg.Trailing())
+	if matches == nil {
+		return nil // no highlight request
 	}
 
-	n := Nick(parsed)
-
-	log.Printf("received highlighting request from %s", n)
-
-	highlight := n
-	if customTextRegex.MatchString(msg) {
-		match := customTextRegex.FindStringSubmatch(msg)
-		highlight = match[1]
+	nick := msg.Prefix.Name // for convenience
+	log.Printf("received highlighting request from %s: %#v", nick, matches)
+	highlight := nick
+	if matches[1] != "" {
+		highlight = matches[1]
 	}
+
+	Privmsg(nick, "will highlight you in 5 seconds")
 
 	// allow for 100ms round trip time to highlight on time
 	time.Sleep(4900 * time.Millisecond)
 
-	if strings.HasPrefix(msg, "highpub") {
-		log.Printf("highlighting %s publicly for: %s", n, highlight)
+	if strings.HasPrefix(msg.Trailing(), "highpub") {
+		log.Printf("highlighting %s publicly for: %s", nick, highlight)
 		Privmsg("#test", "highlight test: "+highlight)
 	} else {
-		log.Printf("highlighting %s privately for: %s", n, highlight)
-		Privmsg(n, highlight)
+		log.Printf("highlighting %s privately for: %s", nick, highlight)
+		Privmsg(nick, highlight)
 	}
 
 	return nil
