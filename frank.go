@@ -185,6 +185,7 @@ func main() {
 	ListenerAdd("urifind", runnerUrifind)
 	ListenerAdd("raumbang", runnerRaumbang)
 	ListenerAdd("greeter", runnerGreet)
+	ListenerAdd("manpages", runnerManpages)
 	// Keep this last, so that other runners can access the name lists
 	ListenerAdd("updateMembers", runnerMembers)
 
