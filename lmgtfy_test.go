@@ -1,26 +1,31 @@
 package main
 
 import (
-	"strings"
+	"context"
 	"testing"
+	"time"
 )
 
-func TestExtractPost(t *testing.T) {
-	// Comment out when testing. Google changes results regularly, making this system test failing too often
-	return
-
-	var samples = make(map[string]string)
-	samples["xeen: lmgtfy: xeens deine mudda nacktbilder"] = "[LMGTFY] frank/lmgtfy_test.go at master · breunigs/frank · GitHub @ https://github.com/breunigs/frank/blob/master/frank/lmgtfy_test.go" //taken from the channel
-	samples["lmgtfy: google maps"] = "[LMGTFY] Google Maps @ https://"
-	samples["lmgtfy: yrden my mail setup"] = "[LMGTFY] yrden my mail setup - Google Search @ http://www.google.com/search?btnI=1&q=yrden+my+mail+setup"
-	samples["buaitrnosups"] = ""
-	samples["warum funktioniert lmgtfy nicht?"] = ""
-	samples["lmgtfy lmgtfy"] = "[LMGTFY] Let me google that for you @ http://lmgtfy.com/"
-
-	for msg, post := range samples {
-		x := extractPost(msg)
-		if !strings.HasPrefix(x, post) {
-			t.Errorf("extractPost(%v)\n GOT: ||%v||\nWANT: ||%v||", msg, x, post)
+func TestGoogleLucky(t *testing.T) {
+	const query = "Apple"
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	u, err := googleLucky(ctx, query)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var okay bool
+	possibilities := []string{
+		"www.apple.com",
+		"apple.com",
+	}
+	for _, p := range possibilities {
+		if u.Host == p {
+			okay = true
+			break
 		}
+	}
+	if !okay {
+		t.Fatalf("unexpected Host field of query %q result %q: got %q, want one of %v", query, u.String(), u.Host, possibilities)
 	}
 }
