@@ -61,7 +61,8 @@ func match(msg *irc.Message) error {
 
 	thing := strings.ToLower(matches[1])
 
-	if nick := msg.Prefix.Name; thing == strings.ToLower(nick) {
+	nick := msg.Prefix.Name
+	if thing == strings.ToLower(nick) {
 		log.Printf("User %s tried to karma her/himself. What a loser!", nick)
 		Privmsg(nick, "[Karma] Voting on yourself is not supported")
 		return nil
@@ -73,7 +74,7 @@ func match(msg *irc.Message) error {
 		data[thing] -= 1
 	}
 
-	log.Printf("%s karma for: %s  (total: %v)", thing, matches[1], data[matches[1]])
+	log.Printf("user %q changed karma (using the %s operator) for %q to %d", nick, matches[2], thing, data[thing])
 
 	return writeAtomically(karmaFile, func(w io.Writer) error {
 		return gob.NewEncoder(w).Encode(data)
