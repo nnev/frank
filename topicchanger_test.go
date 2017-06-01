@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"testing"
 	"time"
 )
@@ -9,40 +8,41 @@ import (
 func TestInsertNextEvent(t *testing.T) {
 	// overwrite DB query function to return locally defined event
 	evt := event{}
-	getNextEvent = func() *event {
-		return &evt
+	getNextEvent = func() (*event, error) {
+		return &evt, nil
 	}
 
 	// setup different possibilities and expected results
 	date := time.Date(2014, 4, 23, 18, 12, 0, 0, time.UTC)
 	evtTreff := event{
-		Stammtisch: false,
-		Override:   toNullString(""),
-		Location:   toNullString(""),
-		Date:       date,
-		Topic:      toNullString("Testing"),
+		stammtisch: false,
+		override:   "",
+		location:   "",
+		date:       date,
+		topic:      "Testing",
 	}
-	strTreff := ROBOT_BLOCK_IDENTIFIER + " 2014-04-23: c¼h: Testing"
+	strTreff := RobotBlockIdentifier + " 2014-04-23: c¼h: Testing"
 
 	evtStammtisch := event{
-		Stammtisch: true,
-		Override:   toNullString(""),
-		Location:   toNullString("Mr. Woot"),
-		Date:       date,
-		Topic:      toNullString(""),
+		stammtisch: true,
+		override:   "",
+		location:   "Mr. Woot",
+		date:       date,
+		topic:      "",
 	}
-	strStammtisch := ROBOT_BLOCK_IDENTIFIER + " 2014-04-23: Stammtisch @ Mr. Woot https://www.noname-ev.de/yarpnarp.html bitte zu/absagen"
+	strStammtisch := RobotBlockIdentifier + " 2014-04-23: Stammtisch @ Mr. Woot https://www.noname-ev.de/yarpnarp.html bitte zu/absagen"
 
+	now := time.Now()
 	evtSpecial := event{
-		Stammtisch: false,
-		Override:   toNullString("RGB2R"),
-		Location:   toNullString(""),
-		Date:       time.Now(),
-		Topic:      toNullString(""),
+		stammtisch: false,
+		override:   "RGB2R",
+		location:   "",
+		date:       now,
+		topic:      "",
 	}
-	strSpecial := ROBOT_BLOCK_IDENTIFIER + " HEUTE (" + time.Now().Format("02.Jan") + "): Ausnahmsweise: RGB2R"
+	strSpecial := RobotBlockIdentifier + " HEUTE (" + now.Format("02.Jan") + "): Ausnahmsweise: RGB2R"
 
-	strOld := ROBOT_BLOCK_IDENTIFIER + " Derp"
+	strOld := RobotBlockIdentifier + " Derp"
 
 	// Test if replacement works correctly
 	evt = evtTreff
@@ -64,13 +64,13 @@ func TestInsertNextEvent(t *testing.T) {
 	for curEvt, topics := range tests {
 		evt = curEvt
 		for from, to := range topics {
-			if x := insertNextEvent(from); x != to {
-				t.Errorf("insertNextEvent(%v)\n GOT: %v\nWANT: %v", from, x, to)
+			newTopic, err := replaceTopic(from)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if newTopic != to {
+				t.Errorf("insertNextEvent(%v)\n GOT: %q\nWANT: %q", from, newTopic, to)
 			}
 		}
 	}
-}
-
-func toNullString(s string) sql.NullString {
-	return sql.NullString{Valid: true, String: s}
 }

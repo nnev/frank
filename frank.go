@@ -4,19 +4,24 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"time"
 
-	parser "github.com/husio/irc"
 	"github.com/robustirc/bridge/robustsession"
+	"gopkg.in/sorcix/irc.v2"
+
+	_ "net/http/pprof"
 )
 
 var (
 	network   = flag.String("network", "", `DNS name to connect to (e.g. "robustirc.net"). The _robustirc._tcp SRV record must be present.`)
 	tlsCAFile = flag.String("tls_ca_file", "", "Use the specified file as trusted CA instead of the system CAs. Useful for testing.")
+
+	listenHttp = flag.String("listen_http", "", "[host]:port on which to serve debug handlers (if non-empty)")
 
 	channels          = flag.String("channels", "", "channels the bot should join. Space separated.")
 	nick              = flag.String("nick", "frank", "nickname of the bot")
@@ -25,8 +30,6 @@ var (
 
 	verbose = flag.Bool("verbose", false, "enable to get very detailed logs")
 )
-
-type Message *parser.Message
 
 var session *robustsession.RobustSession
 
@@ -94,79 +97,23 @@ func kill() {
 }
 
 func boot() {
+	if *nickserv_password != "" {
+		Post(fmt.Sprintf("PASS nickserv=%s", *nickserv_password))
+	}
 	Post(fmt.Sprintf("NICK %s", *nick))
 	Post(fmt.Sprintf("USER bot 0 * :%s von Bötterich", *nick))
-
-	if *nickserv_password == "" {
-		setupJoinChannels()
-		return
-	}
-
-	nickserv := make(chan bool, 1)
-	listener := ListenerAdd("nickserv auth detector", func(parsed Message) {
-		// PREFIX=services.robustirc.net COMMAND=MODE PARAMS=[frank2] TRAILING=+r
-		is_me := Target(parsed) == *nick
-		is_plus_r := strings.HasPrefix(parsed.Trailing, "+") && strings.Contains(parsed.Trailing, "r")
-
-		if parsed.Command == "MODE" && is_me && is_plus_r {
-			nickserv <- true
-		}
-	})
-
-	log.Printf("NICKSERV: Authenticating…")
-	Privmsg("nickserv", "identify "+*nickserv_password)
-
-	go func() {
-		select {
-		case <-nickserv:
-			log.Printf("NICKSERV: auth successful")
-
-		case <-time.After(10 * time.Second):
-			log.Printf("NICKSERV: auth failed. No response within 10s, joining channels anyway. Maybe check the password, i.e. “/msg frank msg nickserv identify <pass>” and watch the logs.")
-		}
-
-		listener.Remove()
-		setupJoinChannels()
-	}()
-}
-
-func parse(msg string) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Printf("parser broken: %v\nMessage that caused this: %s", r, msg)
-		}
-	}()
-
-	if strings.TrimSpace(msg) == "" {
-		return
-	}
-
-	parsed, err := parser.ParseLine(msg)
-	if err != nil {
-		log.Fatal("Could not parse IRC message: %v", err)
-		return
-	}
-
-	// Work around incorrect parsing when a single word PRIVMSG is not formatted
-	// as a trailing message, see: github.com/robustirc/robustirc/issues/129
-	// We should probably wait for github.com/sorcix/irc/issues/26 to be fixed and
-	// then use that parsing library in favor of the lesser/unmaintained
-	// husio/irc.
-	if parsed.Trailing == "" && len(parsed.Params) == 2 {
-		parsed.Trailing = parsed.Params[1]
-		parsed.Params = parsed.Params[:1]
-	}
-
-	if parsed.Command == "PONG" {
-		return
-	}
-
-	listenersRun(parsed)
+	setupJoinChannels()
 }
 
 func main() {
-	listenersReset()
 	setupFlags()
+
+	if *listenHttp != "" {
+		go func() {
+			log.Fatal(http.ListenAndServe(*listenHttp, nil))
+		}()
+	}
+
 	setupSession()
 	setupSignalHandler()
 	setupKeepalive()
@@ -189,24 +136,37 @@ func main() {
 	// Keep this last, so that other runners can access the name lists
 	ListenerAdd("updateMembers", runnerMembers)
 
+	ListenerAdd("topicchanger", runnerTopicChanger)
+
 	if *verbose {
-		ListenerAdd("verbose debugger", func(parsed Message) {
+		ListenerAdd("verbose debugger", func(parsed *irc.Message) error {
 			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix, parsed.Command, parsed.Params, parsed.Trailing)
+			return nil
 		})
 	}
 
-	ListenerAdd("nickname checker", func(parsed Message) {
-		if parsed.Command == ERR_NICKNAMEINUSE {
+	ListenerAdd("nickname checker", func(parsed *irc.Message) error {
+		if parsed.Command == irc.ERR_NICKNAMEINUSE {
 			log.Printf("Nickname is already in use. Sleeping for a minute before restarting.")
-			listenersReset()
 			time.Sleep(time.Minute)
 			log.Printf("Killing now due to nickname being in use")
 			kill()
 		}
+		return nil
 	})
 
-	for {
-		msg := <-session.Messages
-		parse(msg)
+	for raw := range session.Messages {
+		msg := irc.ParseMessage(raw)
+		if msg == nil {
+			continue // message could not be parsed
+		}
+
+		if msg.Command == irc.PONG {
+			continue
+		}
+
+		if err := listenersRun(msg); err != nil {
+			log.Printf("error processing %q (%#v): %v", raw, msg, err)
+		}
 	}
 }

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
 // manpagesMatcher finds words of the form "name(section)", where section is
@@ -11,10 +13,11 @@ import (
 // list of examples.
 var manpagesMatcher = regexp.MustCompile(`\b(\w+)\((\d[\da-z_-]*)\)(\W|$)`)
 
-func runnerManpages(parsed Message) {
-	for _, l := range extractManpages(parsed.Trailing) {
+func runnerManpages(parsed *irc.Message) error {
+	for _, l := range extractManpages(parsed.Trailing()) {
 		Privmsg(Target(parsed), "[manpage] "+l)
 	}
+	return nil
 }
 
 func extractManpages(msg string) (links []string) {

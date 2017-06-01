@@ -11,28 +11,32 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"gopkg.in/sorcix/irc.v2"
 )
 
 var ErrNoResponse = errors.New("extractPost did not return a response")
 
-func runnerLmgtfy(parsed Message) {
+func runnerLmgtfy(parsed *irc.Message) error {
 	tgt := Target(parsed)
-	msg := parsed.Trailing
+	msg := parsed.Trailing()
 
 	if !strings.HasPrefix(tgt, "#") {
 		// only answer to this in channels
-		return
+		return nil
 	}
 
 	reply, err := lmgtfyReplyFor(msg)
 	if err != nil {
 		if err == ErrNoResponse {
-			return
+			return nil
 		}
 		Privmsg(tgt, fmt.Sprintf("Error: %v", err))
-		return
+		return nil
 	}
 	Privmsg(tgt, fmt.Sprintf("[LMGTFY] %s", reply))
+
+	return nil
 }
 
 func googleLucky(ctx context.Context, query string) (*url.URL, error) {
