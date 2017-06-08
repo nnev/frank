@@ -132,7 +132,7 @@ SELECT
 FROM termine
 LEFT JOIN vortraege
 ON termine.date = vortraege.date
-WHERE termine.date >= NOW()
+WHERE termine.date >= NOW()::date
 ORDER BY termine.date ASC
 LIMIT 1
 `
