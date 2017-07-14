@@ -68,7 +68,14 @@ func runnerMembers(parsed *irc.Message) error {
 
 	switch parsed.Command {
 	case "353": // Names
-		channel := parsed.Params[len(parsed.Params)-1]
+		if len(parsed.Params) < 4 {
+			return nil
+		}
+		// parsed.Params[0] is my own nick
+		// parsed.Params[1] is a sigil for the channel (“=” public, “@” secret, …)
+		// parsed.Params[2] is the name of the channel
+		// parsed.Params[3] (or parsed.Trailing()) are the space-separated nicknames
+		channel := parsed.Params[2]
 		for _, n := range strings.Split(parsed.Trailing(), " ") {
 			n = strings.TrimSpace(strings.TrimLeft(n, "~&@%+"))
 			if n != "" {
