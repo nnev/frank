@@ -315,7 +315,7 @@ func extractTitleFromHTML(body io.Reader) (string, error) {
 	var title string
 	var f func(*html.Node)
 	f = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "title" {
+		if n.Type == html.ElementNode && n.Data == "title" && n.FirstChild != nil {
 			title = n.FirstChild.Data
 		}
 		if title != "" {
