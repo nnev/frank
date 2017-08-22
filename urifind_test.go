@@ -66,6 +66,13 @@ const truncatedBody = `<!DOCTYPE html>
 </he
 `
 
+const emptyTitleBody = `<!DOCTYPE html>
+<html>
+<head>
+<title></title>
+</head>
+`
+
 type nopCloser struct {
 	io.Reader
 }
@@ -98,6 +105,10 @@ func TestTitleGet(t *testing.T) {
 		{
 			body:  truncatedBody,
 			title: "title from truncated body",
+		},
+		{
+			body:  emptyTitleBody,
+			title: "",
 		},
 	} {
 		want := want // capture
