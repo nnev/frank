@@ -11,7 +11,7 @@ import (
 // manpagesMatcher finds words of the form "name(section)", where section is
 // either a number, or a number followed by some characters. See tests for a
 // list of examples.
-var manpagesMatcher = regexp.MustCompile(`\b(\w+)\((\d[\da-z_-]*)\)(\W|$)`)
+var manpagesMatcher = regexp.MustCompile(`\b([\w-]+)\((\d[\da-z_-]*)\)(\W|$)`)
 
 func runnerManpages(parsed *irc.Message) error {
 	for _, l := range extractManpages(parsed.Trailing()) {

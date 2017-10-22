@@ -20,6 +20,7 @@ func TestManpageExtract(t *testing.T) {
 		{"das kann man in foo(1) oder bar(3) nachlesen", []string{"https://manpages.debian.org/foo.1", "https://manpages.debian.org/bar.3"}},
 		{"man foo", nil},
 		{"frank: man foo", []string{"https://manpages.debian.org/foo"}},
+		{"git-rebase(1)", []string{"https://manpages.debian.org/git-rebase.1"}},
 	}
 
 	for _, tc := range tcs {
