@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -15,7 +18,27 @@ var manpagesMatcher = regexp.MustCompile(`\b([\w-]+)\((\d[\da-z_-]*)\)(\W|$)`)
 
 func runnerManpages(parsed *irc.Message) error {
 	for _, l := range extractManpages(parsed.Trailing()) {
-		Privmsg(Target(parsed), "[manpage] "+l)
+		l := l // copy
+		go func() {
+			req, err := http.NewRequest("HEAD", l, nil)
+			if err != nil {
+				log.Printf("manpage: %v", err)
+				return
+			}
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				log.Printf("manpage: %s: %v", l, err)
+				return
+			}
+			// for keepalive
+			ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			if got, want := resp.StatusCode, http.StatusOK; got != want {
+				log.Printf("manpage: not replying: %s: unexpected HTTP status code: got %d, want %d", l, got, want)
+				return
+			}
+			Privmsg(Target(parsed), "[manpage] "+l)
+		}()
 	}
 	return nil
 }
