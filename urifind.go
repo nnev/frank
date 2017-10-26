@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	_ "crypto/sha512"
+	"compress/zlib"
 	"errors"
 	"io"
 	"log"
@@ -269,6 +270,17 @@ func TitleGet(doer Doer, url string) (string, string, error) {
 	if err != nil {
 		log.Printf("WTF: could not resolve %s: %s", url, err)
 		return "", url, err
+	}
+	// from https://github.com/gaul/anaconda/commit/ba67efed60e7dcf8a96fd9053531fc1d517fd7df
+	// Twitter returns deflate data despite the client only requesting gzip
+	// data.  net/http automatically handles the latter but not the former:
+	// https://github.com/golang/go/issues/18779
+	if r.Header.Get("Content-Encoding") == "deflate" {
+		var err error
+		r.Body, err = zlib.NewReader(r.Body)
+		if err != nil {
+			return "", url, err
+		}
 	}
 	defer r.Body.Close()
 
