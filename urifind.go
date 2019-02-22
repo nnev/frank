@@ -294,7 +294,7 @@ func TitleGet(doer Doer, url string) (string, string, error) {
 		return "", url, err
 	}
 
-	limited := io.LimitedReader{r.Body, int64(httpReadByte - bytesRead)}
+	limited := io.LimitedReader{R: r.Body, N: int64(httpReadByte - bytesRead)}
 	reader := io.MultiReader(bytes.NewReader(head[:bytesRead]), &limited)
 
 	contentType := r.Header.Get("Content-Type")

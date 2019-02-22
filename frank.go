@@ -45,7 +45,7 @@ func setupSession() {
 	var err error
 	session, err = robustsession.Create(*network, *tlsCAFile)
 	if err != nil {
-		log.Fatal("Could not create RobustIRC session: %v", err)
+		log.Fatalf("Could not create RobustIRC session: %v", err)
 	}
 
 	log.Printf("Created RobustSession for %s. Session id: %s", *nick, session.SessionId())
@@ -76,7 +76,7 @@ func setupSignalHandler() {
 func setupSessionErrorHandler() {
 	go func() {
 		err := <-session.Errors
-		log.Fatal("RobustIRC session error: %v", err)
+		log.Fatalf("RobustIRC session error: %v", err)
 	}()
 }
 
@@ -140,7 +140,7 @@ func main() {
 
 	if *verbose {
 		ListenerAdd("verbose debugger", func(parsed *irc.Message) error {
-			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix, parsed.Command, parsed.Params, parsed.Trailing)
+			log.Printf("< PREFIX=%s COMMAND=%s PARAMS=%s TRAILING=%s", parsed.Prefix, parsed.Command, parsed.Params, parsed.Trailing())
 			return nil
 		})
 	}

@@ -13,23 +13,23 @@ type membersMap struct {
 	mtx sync.RWMutex
 }
 
-func (m membersMap) initChannel(channel string) {
+func (m *membersMap) initChannel(channel string) {
 	if m.m[channel] == nil {
 		m.m[channel] = make(map[string]bool)
 	}
 }
 
-func (m membersMap) add(nick, channel string) {
+func (m *membersMap) add(nick, channel string) {
 	m.initChannel(channel)
 	m.m[channel][nick] = true
 }
 
-func (m membersMap) remove(nick, channel string) {
+func (m *membersMap) remove(nick, channel string) {
 	m.initChannel(channel)
 	delete(m.m[channel], nick)
 }
 
-func (m membersMap) rename(from, to string) {
+func (m *membersMap) rename(from, to string) {
 	for _, c := range m.m {
 		if _, ok := c[from]; !ok {
 			continue
@@ -39,7 +39,7 @@ func (m membersMap) rename(from, to string) {
 	}
 }
 
-func (m membersMap) IsMember(nick, channel string) bool {
+func (m *membersMap) IsMember(nick, channel string) bool {
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
 	c := m.m[channel]
