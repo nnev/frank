@@ -172,6 +172,6 @@ func TestCache(t *testing.T) {
 	cacheAdd("secondsAgoTestUrl", "another title")
 	time.Sleep(time.Second)
 	if secs := cacheGetSecondsToLastPost("another title"); secs != 1 {
-		t.Errorf("Cache did not calculate correct amount of seconds since post. Got: %s, Expected: 1s", secs)
+		t.Errorf("Cache did not calculate correct amount of seconds since post. Got: %v, Expected: 1s", secs)
 	}
 }
