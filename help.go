@@ -53,7 +53,7 @@ func runnerHelp(parsed *irc.Message) error {
 	Privmsg(n, " ")
 
 	Privmsg(n, "If you need more details, please look at my source:")
-	Privmsg(n, "https://github.com/breunigs/frank")
+	Privmsg(n, "https://github.com/nnev/frank")
 
 	return nil
 }
