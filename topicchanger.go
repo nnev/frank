@@ -88,6 +88,7 @@ type event struct {
 	location   string
 	date       time.Time
 	topic      string
+	speaker    string
 }
 
 func (evt *event) String() string {
@@ -115,7 +116,7 @@ func (evt *event) String() string {
 		t += " https://www.noname-ev.de/yarpnarp.html"
 		t += " bitte zu/absagen"
 	} else {
-		t += "c¼h: " + evt.topic
+		t += "c¼h: " + evt.topic + " von " + evt.speaker
 	}
 
 	return strings.TrimSpace(t)
@@ -148,7 +149,8 @@ LIMIT 1
 		&e.override,
 		&e.location,
 		&e.date,
-		&e.topic); err != nil {
+		&e.topic,
+		&e.speaker); err != nil {
 		return nil, err
 	}
 
