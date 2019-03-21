@@ -167,22 +167,22 @@ func atomGithubSample(updated time.Time) string {
 
 	return `<?xml version="1.0" encoding="UTF-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/" xml:lang="en-US">
-  <id>tag:github.com,2008:/breunigs/frank/commits/robust</id>
-  <link type="text/html" rel="alternate" href="https://github.com/breunigs/frank/commits/robust"/>
-  <link type="application/atom+xml" rel="self" href="https://github.com/breunigs/frank/commits/robust.atom"/>
+  <id>tag:github.com,2008:/nnev/frank/commits/robust</id>
+  <link type="text/html" rel="alternate" href="https://github.com/nnev/frank/commits/robust"/>
+  <link type="application/atom+xml" rel="self" href="https://github.com/nnev/frank/commits/robust.atom"/>
   <title>Recent Commits to frank:robust</title>
   <updated>` + updated.Format(format) + `</updated>
   <entry>
     <id>tag:github.com,2008:Grit::Commit/05c498f24c791776a5c100d099abd5e4976c4af7</id>
-    <link type="text/html" rel="alternate" href="https://github.com/breunigs/frank/commit/05c498f24c791776a5c100d099abd5e4976c4af7"/>
+    <link type="text/html" rel="alternate" href="https://github.com/nnev/frank/commit/05c498f24c791776a5c100d099abd5e4976c4af7"/>
     <title>
         fix appendIfMiss logic error. And actually run its tests.
     </title>
     <updated>` + updated.Format(format) + `</updated>
     <media:thumbnail height="30" width="30" url="https://avatars3.githubusercontent.com/u/307954?v=3&amp;s=30"/>
     <author>
-      <name>breunigs</name>
-      <uri>https://github.com/breunigs</uri>
+      <name>nnev</name>
+      <uri>https://github.com/nnev</uri>
     </author>
     <content type="html">
       &lt;pre style='white-space:pre-wrap;width:81ex'>fix appendIfMiss logic error. And actually run its tests.&lt;/pre>
@@ -190,15 +190,15 @@ func atomGithubSample(updated time.Time) string {
   </entry>
   <entry>
     <id>tag:github.com,2008:Grit::Commit/cfdee2b55ffb898c3449065cdbc5d6314ec03555</id>
-    <link type="text/html" rel="alternate" href="https://github.com/breunigs/frank/commit/cfdee2b55ffb898c3449065cdbc5d6314ec03555"/>
+    <link type="text/html" rel="alternate" href="https://github.com/nnev/frank/commit/cfdee2b55ffb898c3449065cdbc5d6314ec03555"/>
     <title>
         add some tests for RSS parsing to make lil&#39;sECuRE happy
     </title>
     <updated>` + updated.Add(-10*time.Second).Format(format) + `</updated>
     <media:thumbnail height="30" width="30" url="https://avatars3.githubusercontent.com/u/307954?v=3&amp;s=30"/>
     <author>
-      <name>breunigs</name>
-      <uri>https://github.com/breunigs</uri>
+      <name>nnev</name>
+      <uri>https://github.com/nnev</uri>
     </author>
     <content type="html">
       &lt;pre style='white-space:pre-wrap;width:81ex'>add some tests for RSS parsing to make lil&#39;sECuRE happy&lt;/pre>

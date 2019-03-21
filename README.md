@@ -9,7 +9,7 @@ frank connects directly to [RobustIRC networks](https://robustirc.net/) using th
 ### Installation
 
 ```
-go get github.com/breunigs/frank
+go get github.com/nnev/frank
 echo "Modify away!"
 ```
 
