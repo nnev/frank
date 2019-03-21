@@ -20,8 +20,9 @@ func TestInsertNextEvent(t *testing.T) {
 		location:   "",
 		date:       date,
 		topic:      "Testing",
+		speaker:    "Test-Speaker",
 	}
-	strTreff := RobotBlockIdentifier + " 2014-04-23: c¼h: Testing"
+	strTreff := RobotBlockIdentifier + " 2014-04-23: c¼h: Testing von Test-Speaker"
 
 	evtStammtisch := event{
 		stammtisch: true,
@@ -29,6 +30,7 @@ func TestInsertNextEvent(t *testing.T) {
 		location:   "Mr. Woot",
 		date:       date,
 		topic:      "",
+		speaker:    "",
 	}
 	strStammtisch := RobotBlockIdentifier + " 2014-04-23: Stammtisch @ Mr. Woot https://www.noname-ev.de/yarpnarp.html bitte zu/absagen"
 
@@ -39,6 +41,7 @@ func TestInsertNextEvent(t *testing.T) {
 		location:   "",
 		date:       now,
 		topic:      "",
+		speaker:    "",
 	}
 	strSpecial := RobotBlockIdentifier + " HEUTE (" + now.Format("02.Jan") + "): Ausnahmsweise: RGB2R"
 
