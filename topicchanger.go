@@ -116,7 +116,10 @@ func (evt *event) String() string {
 		t += " https://www.noname-ev.de/yarpnarp.html"
 		t += " bitte zu/absagen"
 	} else {
-		t += "c¼h: " + evt.topic + " von " + evt.speaker
+		t += "c¼h: " + evt.topic
+		if evt.speaker != "" {
+			t += " von " + evt.speaker
+		}
 	}
 
 	return strings.TrimSpace(t)
@@ -129,7 +132,8 @@ SELECT
   override,
   CASE WHEN location = '' OR location IS NULL THEN 'TBA' ELSE location END,
   termine.date,
-  CASE WHEN topic = '' OR topic IS NULL THEN 'noch keine ◉︵◉' ELSE topic END
+  CASE WHEN topic = '' OR topic IS NULL THEN 'noch keine ◉︵◉' ELSE topic END,
+  speaker
 FROM termine
 LEFT JOIN vortraege
 ON termine.date = vortraege.date
