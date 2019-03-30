@@ -133,7 +133,7 @@ SELECT
   CASE WHEN location = '' OR location IS NULL THEN 'TBA' ELSE location END,
   termine.date,
   CASE WHEN topic = '' OR topic IS NULL THEN 'noch keine ◉︵◉' ELSE topic END,
-  speaker
+  CASE WHEN speaker = '' OR speaker IS NULL THEN '' ELSE speaker END
 FROM termine
 LEFT JOIN vortraege
 ON termine.date = vortraege.date
