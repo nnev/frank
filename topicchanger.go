@@ -85,10 +85,10 @@ func updateTopic(channel, currentTopic string) error {
 type event struct {
 	stammtisch bool
 	override   string
-	location   string
+	location   sql.NullString
 	date       time.Time
-	topic      string
-	speaker    string
+	topic      sql.NullString
+	speaker    sql.NullString
 }
 
 func (evt *event) String() string {
@@ -112,13 +112,23 @@ func (evt *event) String() string {
 	if evt.override != "" {
 		t += "Ausnahmsweise: " + evt.override
 	} else if evt.stammtisch {
-		t += "Stammtisch @ " + evt.location
+		t += "Stammtisch @ "
+		if evt.location.Valid {
+			t += evt.location.String
+		} else {
+			t += "TBA"
+		}
 		t += " https://www.noname-ev.de/yarpnarp.html"
 		t += " bitte zu/absagen"
 	} else {
-		t += "c¼h: " + evt.topic
-		if evt.speaker != "" {
-			t += " von " + evt.speaker
+		t += "c¼h: "
+		if evt.topic.Valid {
+			t += evt.topic.String
+			if evt.speaker.Valid {
+				t += " von " + evt.speaker.String
+			}
+		} else {
+			t += "noch keine ◉︵◉"
 		}
 	}
 
@@ -130,10 +140,10 @@ var getNextEvent = func() (*event, error) {
 SELECT
   stammtisch,
   override,
-  CASE WHEN location = '' OR location IS NULL THEN 'TBA' ELSE location END,
+  location,
   termine.date,
-  CASE WHEN topic = '' OR topic IS NULL THEN 'noch keine ◉︵◉' ELSE topic END,
-  CASE WHEN speaker = '' OR speaker IS NULL THEN '' ELSE speaker END
+  topic,
+  speaker
 FROM termine
 LEFT JOIN vortraege
 ON termine.date = vortraege.date

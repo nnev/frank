@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"testing"
 	"time"
 )
@@ -17,20 +18,20 @@ func TestInsertNextEvent(t *testing.T) {
 	evtTreff := event{
 		stammtisch: false,
 		override:   "",
-		location:   "",
+		location:   sql.NullString{"garbage", false},
 		date:       date,
-		topic:      "Testing",
-		speaker:    "Test-Speaker",
+		topic:      sql.NullString{"Testing", true},
+		speaker:    sql.NullString{"Test-Speaker", true},
 	}
 	strTreff := RobotBlockIdentifier + " 2014-04-23: c¼h: Testing von Test-Speaker"
 
 	evtStammtisch := event{
 		stammtisch: true,
 		override:   "",
-		location:   "Mr. Woot",
+		location:   sql.NullString{"Mr. Woot", true},
 		date:       date,
-		topic:      "",
-		speaker:    "",
+		topic:      sql.NullString{"GARBAGE", false},
+		speaker:    sql.NullString{"GaRbAgE", false},
 	}
 	strStammtisch := RobotBlockIdentifier + " 2014-04-23: Stammtisch @ Mr. Woot https://www.noname-ev.de/yarpnarp.html bitte zu/absagen"
 
@@ -38,10 +39,10 @@ func TestInsertNextEvent(t *testing.T) {
 	evtSpecial := event{
 		stammtisch: false,
 		override:   "RGB2R",
-		location:   "",
+		location:   sql.NullString{"gArBaGe", false},
 		date:       now,
-		topic:      "",
-		speaker:    "",
+		topic:      sql.NullString{"GArbAGe", false},
+		speaker:    sql.NullString{"gaRBagE", false},
 	}
 	strSpecial := RobotBlockIdentifier + " HEUTE (" + now.Format("02.Jan") + "): Ausnahmsweise: RGB2R"
 
