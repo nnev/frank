@@ -120,11 +120,16 @@ type Link struct {
 }
 
 func loadURL(url string) []byte {
-	r, err := rssHttpClient.Get(url)
-
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("RSS: could not construct HTTP request: %v", err)
+		return nil
+	}
+	req.Header.Set("User-Agent", "https://github.com/nnev/frank")
+	r, err := rssHttpClient.Do(req)
 	if err != nil {
 		log.Printf("RSS: could resolve URL %s: %s", url, err)
-		return []byte{}
+		return nil
 	}
 	defer r.Body.Close()
 
@@ -133,7 +138,7 @@ func loadURL(url string) []byte {
 	body, err := ioutil.ReadAll(limitedBody)
 	if err != nil {
 		log.Printf("RSS: could read data from URL %s: %s", url, err)
-		return []byte{}
+		return nil
 	}
 
 	return body
