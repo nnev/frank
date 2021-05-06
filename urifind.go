@@ -286,7 +286,7 @@ func TitleGet(doer Doer, url string) (string, string, error) {
 
 	lastUrl := r.Request.URL.String()
 
-	head := make([]byte, 1024)
+	head := make([]byte, 1*1024*1024)
 
 	bytesRead, err := io.ReadFull(r.Body, head)
 	if err != nil && err != io.ErrUnexpectedEOF {
