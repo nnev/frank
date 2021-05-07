@@ -7,6 +7,7 @@ import (
 )
 
 func TestGoogleLucky(t *testing.T) {
+	t.Skip("broken: Google Search only shows a consent screen")
 	const query = "Apple"
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
