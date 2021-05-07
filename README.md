@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/nnev/frank.svg?branch=robust)](https://travis-ci.org/nnev/frank)
+[![GitHub Actions CI](https://github.com/nnev/frank/actions/workflows/ci.yml/badge.svg)](https://github.com/nnev/frank/actions/workflows/ci.yml)
 
 ### Intro
 
