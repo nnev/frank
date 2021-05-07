@@ -18,20 +18,20 @@ func TestInsertNextEvent(t *testing.T) {
 	evtTreff := event{
 		stammtisch: false,
 		override:   "",
-		location:   sql.NullString{"garbage", false},
+		location:   sql.NullString{String: "garbage", Valid: false},
 		date:       date,
-		topic:      sql.NullString{"Testing", true},
-		speaker:    sql.NullString{"Test-Speaker", true},
+		topic:      sql.NullString{String: "Testing", Valid: true},
+		speaker:    sql.NullString{String: "Test-Speaker", Valid: true},
 	}
 	strTreff := RobotBlockIdentifier + " 2014-04-23: c¼h: Testing von Test-Speaker"
 
 	evtStammtisch := event{
 		stammtisch: true,
 		override:   "",
-		location:   sql.NullString{"Mr. Woot", true},
+		location:   sql.NullString{String: "Mr. Woot", Valid: true},
 		date:       date,
-		topic:      sql.NullString{"GARBAGE", false},
-		speaker:    sql.NullString{"GaRbAgE", false},
+		topic:      sql.NullString{String: "GARBAGE", Valid: false},
+		speaker:    sql.NullString{String: "GaRbAgE", Valid: false},
 	}
 	strStammtisch := RobotBlockIdentifier + " 2014-04-23: Stammtisch @ Mr. Woot https://www.noname-ev.de/yarpnarp.html bitte zu/absagen"
 
@@ -39,10 +39,10 @@ func TestInsertNextEvent(t *testing.T) {
 	evtSpecial := event{
 		stammtisch: false,
 		override:   "RGB2R",
-		location:   sql.NullString{"gArBaGe", false},
+		location:   sql.NullString{String: "gArBaGe", Valid: false},
 		date:       now,
-		topic:      sql.NullString{"GArbAGe", false},
-		speaker:    sql.NullString{"gaRBagE", false},
+		topic:      sql.NullString{String: "GArbAGe", Valid: false},
+		speaker:    sql.NullString{String: "gaRBagE", Valid: false},
 	}
 	strSpecial := RobotBlockIdentifier + " HEUTE (" + now.Format("02.Jan") + "): Ausnahmsweise: RGB2R"
 
