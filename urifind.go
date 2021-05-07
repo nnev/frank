@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
-	_ "crypto/sha512"
 	"compress/zlib"
+	_ "crypto/sha512"
 	"errors"
 	"io"
 	"log"
